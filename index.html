@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NY Ovals IQ</title>
+  <style>
+    :root {
+      --bg-1: #0f172a;
+      --bg-2: #1e293b;
+      --panel: rgba(255,255,255,0.08);
+      --panel-strong: rgba(255,255,255,0.12);
+      --border: rgba(255,255,255,0.12);
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --soft: #94a3b8;
+      --accent: #f97316;
+      --accent-soft: rgba(249,115,22,0.18);
+      --blue-soft: rgba(96,165,250,0.12);
+      --success: #fdba74;
+      --danger: #fb7185;
+      --shadow: 0 20px 60px rgba(0,0,0,0.28);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --max: 1200px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(249,115,22,0.22), transparent 30%),
+        radial-gradient(circle at right, rgba(96,165,250,0.12), transparent 24%),
+        linear-gradient(to bottom, var(--bg-1), var(--bg-2));
+      min-height: 100vh;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, input, textarea, select { font: inherit; }
+
+    .container {
+      width: min(var(--max), calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .glass {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .section { padding: 72px 0; }
+    .section-title { max-width: 760px; margin-bottom: 28px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(249,115,22,0.22);
+      color: #fdba74;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin-bottom: 14px;
+    }
+    .section-title h2 { margin: 0; font-size: clamp(2rem, 4vw, 3rem); }
+    .section-title p { color: var(--muted); line-height: 1.7; margin-top: 12px; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(15,23,42,0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      min-height: 78px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: var(--accent-soft);
+      color: #fdba74;
+      font-size: 20px;
+      border: 1px solid rgba(249,115,22,0.18);
+    }
+    .brand h1 {
+      font-size: 18px;
+      margin: 0;
+      line-height: 1.1;
+    }
+    .brand small {
+      display: block;
+      color: var(--soft);
+      margin-top: 3px;
+    }
+    .nav {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .nav a:hover { color: white; }
+
+    .btn {
+      border: 0;
+      border-radius: 18px;
+      padding: 12px 18px;
+      cursor: pointer;
+      transition: 0.2s ease;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary {
+      background: var(--accent);
+      color: #111827;
+    }
+    .btn-primary:hover { background: #fb923c; }
+    .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+    .btn-sm { padding: 10px 14px; font-size: 14px; }
+
+    .hero {
+      padding: 72px 0 24px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap: 26px;
+      align-items: center;
+    }
+    .hero h2 {
+      margin: 0;
+      font-size: clamp(2.6rem, 6vw, 4.8rem);
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+    }
+    .hero p {
+      font-size: 18px;
+      line-height: 1.8;
+      color: var(--muted);
+      max-width: 720px;
+    }
+    .hero-actions, .hero-pills { display: flex; flex-wrap: wrap; gap: 12px; }
+    .hero-pills { margin-top: 22px; }
+    .pill {
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .snapshot {
+      overflow: hidden;
+      border-radius: 30px;
+    }
+    .snapshot-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .snapshot-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .snapshot-item {
+      padding: 24px;
+    }
+    .snapshot-item + .snapshot-item {
+      border-left: 1px solid rgba(255,255,255,0.08);
+    }
+    .snapshot-label { color: var(--soft); font-size: 14px; }
+    .snapshot-value { font-size: 32px; font-weight: 800; margin-top: 10px; }
+    .snapshot-note { color: var(--success); margin-top: 8px; font-size: 14px; }
+    .empty-graph {
+      padding: 26px;
+    }
+    .bars {
+      margin-top: 18px;
+      display: grid;
+      gap: 14px;
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 150px 1fr 50px;
+      gap: 12px;
+      align-items: center;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .bar-track {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #f97316, #fdba74);
+      transition: width 0.35s ease;
+    }
+
+    .stats-grid,
+    .feature-grid,
+    .metrics-grid,
+    .dashboard-grid,
+    .contact-grid,
+    .players-layout,
+    .empty-stat-grid {
+      display: grid;
+      gap: 18px;
+    }
+    .metrics-grid { grid-template-columns: repeat(4, 1fr); margin-top: 18px; }
+    .feature-grid { grid-template-columns: repeat(4, 1fr); }
+    .dashboard-grid { grid-template-columns: 1.2fr 0.8fr; }
+    .players-layout { grid-template-columns: 0.9fr 1.1fr; }
+    .contact-grid { grid-template-columns: 0.85fr 1.15fr; }
+    .empty-stat-grid { grid-template-columns: repeat(4, 1fr); }
+
+    .metric-card, .feature-card, .panel-pad { padding: 22px; }
+    .metric-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .metric-title { color: var(--muted); font-size: 14px; }
+    .metric-value { font-size: 34px; font-weight: 800; margin-top: 12px; }
+    .metric-note { color: var(--success); font-size: 13px; margin-top: 6px; }
+    .metric-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: var(--accent-soft);
+      font-size: 18px;
+    }
+
+    .feature-card h3, .panel-title { margin: 0; font-size: 20px; }
+    .feature-card p, .panel-subtitle, .muted { color: var(--muted); line-height: 1.7; }
+    .feature-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: var(--accent-soft);
+      margin-bottom: 16px;
+      font-size: 22px;
+    }
+
+    .tabs {
+      display: inline-flex;
+      padding: 6px;
+      gap: 6px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      border: 0;
+      background: transparent;
+      color: var(--soft);
+      padding: 10px 14px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .tab-btn.active {
+      background: rgba(255,255,255,0.08);
+      color: white;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .list-rank {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #fdba74;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .stack { display: grid; gap: 14px; }
+
+    .upload-box {
+      border: 1px dashed rgba(255,255,255,0.18);
+      border-radius: 28px;
+      padding: 36px 24px;
+      text-align: center;
+      background: rgba(15,23,42,0.34);
+    }
+    .upload-icon { font-size: 42px; margin-bottom: 12px; }
+    .upload-meta {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .helper {
+      margin-top: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.05);
+      padding: 14px;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: left;
+      line-height: 1.7;
+    }
+    .admin-link {
+      width: 100%;
+      text-align: left;
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .admin-link + .admin-link { margin-top: 10px; }
+
+    .search-box {
+      position: relative;
+      margin-bottom: 14px;
+    }
+    .search-box input {
+      width: 100%;
+      border-radius: 18px;
+      padding: 14px 16px 14px 44px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(15,23,42,0.4);
+      color: white;
+    }
+    .search-box span {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--soft);
+    }
+
+    .player-list { display: grid; gap: 12px; }
+    .player-card {
+      width: 100%;
+      text-align: left;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.05);
+      color: white;
+      padding: 16px;
+      cursor: pointer;
+    }
+    .player-card.active {
+      border-color: rgba(249,115,22,0.45);
+      background: rgba(249,115,22,0.12);
+    }
+    .player-card h4 { margin: 0; font-size: 17px; }
+    .player-card p { margin: 6px 0 0; color: var(--soft); font-size: 14px; }
+
+    .player-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: start;
+      flex-wrap: wrap;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: var(--accent-soft);
+      color: #fdba74;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .empty-state {
+      padding: 28px;
+      border-radius: 24px;
+      border: 1px dashed rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.04);
+      text-align: center;
+    }
+    .empty-state strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 18px;
+    }
+    .empty-state p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .empty-metric {
+      border-radius: 20px;
+      padding: 18px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .empty-metric .label { font-size: 14px; color: var(--soft); }
+    .empty-metric .value { margin-top: 10px; font-size: 30px; font-weight: 800; }
+
+    form { display: grid; gap: 14px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    input, textarea {
+      width: 100%;
+      border-radius: 18px;
+      padding: 14px 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(15,23,42,0.42);
+      color: white;
+      outline: none;
+    }
+    textarea { min-height: 140px; resize: vertical; }
+    input::placeholder, textarea::placeholder { color: #94a3b8; }
+
+    .contact-list { display: grid; gap: 12px; }
+    .contact-item {
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.05);
+      padding: 16px;
+      color: var(--muted);
+    }
+
+    .footer {
+      padding: 32px 0 48px;
+      color: var(--soft);
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 1080px) {
+      .hero-grid,
+      .dashboard-grid,
+      .players-layout,
+      .contact-grid,
+      .feature-grid,
+      .metrics-grid,
+      .empty-stat-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .players-layout,
+      .dashboard-grid,
+      .contact-grid,
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .nav { display: none; }
+      .form-grid,
+      .feature-grid,
+      .metrics-grid,
+      .empty-stat-grid { grid-template-columns: 1fr; }
+      .snapshot-grid { grid-template-columns: 1fr; }
+      .snapshot-item + .snapshot-item { border-left: 0; border-top: 1px solid rgba(255,255,255,0.08); }
+      .bar-row { grid-template-columns: 1fr; }
+      .topbar-inner { flex-wrap: wrap; padding: 10px 0 14px; }
+      .hero { padding-top: 44px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <div class="brand-icon">🏏</div>
+        <div>
+          <h1>NY Ovals IQ</h1>
+          <small>Performance tracking • Predictions • Player development</small>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <a href="#features">Features</a>
+        <a href="#dashboard">Dashboard</a>
+        <a href="#players">Players</a>
+        <a href="#contact">Contact</a>
+      </nav>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="btn btn-secondary btn-sm" href="#dashboard">Open Platform</a>
+        <a class="btn btn-primary btn-sm" href="#contact">Book Free Call</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow">Built for leagues, clubs, coaches, and developing players</div>
+          <h2>Cricket stats and player intelligence for smarter development.</h2>
+          <p>
+            NY Ovals IQ is now set up as a real usable website structure, not just a visual mockup. You can upload player data by CSV, store it in the browser, search players, and manage an empty-state platform while you onboard teams.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#dashboard">Launch Platform →</a>
+            <a class="btn btn-secondary" href="#uploads">Upload First CSV</a>
+          </div>
+          <div class="hero-pills">
+            <div class="pill">Free to use</div>
+            <div class="pill">CSV upload enabled</div>
+            <div class="pill">No current player data</div>
+          </div>
+        </div>
+
+        <div class="card snapshot">
+          <div class="snapshot-head">
+            <div>
+              <div style="font-size:20px; font-weight:800;">Platform status</div>
+              <div class="panel-subtitle">Ready for real users and first data upload</div>
+            </div>
+            <div class="tag">Live site mode</div>
+          </div>
+          <div class="snapshot-grid">
+            <div class="snapshot-item">
+              <div class="snapshot-label">Active players</div>
+              <div class="snapshot-value" id="heroPlayerCount">0</div>
+              <div class="snapshot-note">Waiting for first team upload</div>
+            </div>
+            <div class="snapshot-item">
+              <div class="snapshot-label">Teams tracked</div>
+              <div class="snapshot-value" id="heroTeamCount">0</div>
+              <div class="snapshot-note">Add a CSV to begin</div>
+            </div>
+          </div>
+          <div class="empty-graph">
+            <div class="panel-subtitle">Roster distribution preview</div>
+            <div class="bars" id="teamBars">
+              <div class="bar-row">
+                <span>No teams yet</span>
+                <div class="bar-track"><div class="bar-fill" style="width: 0%"></div></div>
+                <strong>0</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="container metrics-grid">
+        <div class="card metric-card">
+          <div class="metric-top">
+            <div>
+              <div class="metric-title">Active Players</div>
+              <div class="metric-value" id="metricPlayers">0</div>
+              <div class="metric-note">Updates after upload</div>
+            </div>
+            <div class="metric-icon">👥</div>
+          </div>
+        </div>
+        <div class="card metric-card">
+          <div class="metric-top">
+            <div>
+              <div class="metric-title">Teams</div>
+              <div class="metric-value" id="metricTeams">0</div>
+              <div class="metric-note">Unique team count</div>
+            </div>
+            <div class="metric-icon">🛡️</div>
+          </div>
+        </div>
+        <div class="card metric-card">
+          <div class="metric-top">
+            <div>
+              <div class="metric-title">Total Runs</div>
+              <div class="metric-value" id="metricRuns">0</div>
+              <div class="metric-note">From uploaded player rows</div>
+            </div>
+            <div class="metric-icon">📈</div>
+          </div>
+        </div>
+        <div class="card metric-card">
+          <div class="metric-top">
+            <div>
+              <div class="metric-title">Total Wickets</div>
+              <div class="metric-value" id="metricWickets">0</div>
+              <div class="metric-note">Ready for analysis</div>
+            </div>
+            <div class="metric-icon">🎯</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-title">
+          <div class="eyebrow">What the platform does</div>
+          <h2>Made to be real from day one, even before the first player is added.</h2>
+          <p>
+            This version is designed for GitHub Pages. No React tantrums, no build drama, no mystery imports. Just one HTML file you can publish, share, and start using immediately.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+          <div class="card feature-card">
+            <div class="feature-icon">📂</div>
+            <h3>CSV roster upload</h3>
+            <p>Upload player data in a simple CSV format and store it in the browser instantly.</p>
+          </div>
+          <div class="card feature-card">
+            <div class="feature-icon">🔎</div>
+            <h3>Player search</h3>
+            <p>Search by player name, team, or role as soon as data is added.</p>
+          </div>
+          <div class="card feature-card">
+            <div class="feature-icon">🧠</div>
+            <h3>Empty-state ready</h3>
+            <p>Looks professional even with zero data, which is perfect while you onboard teams.</p>
+          </div>
+          <div class="card feature-card">
+            <div class="feature-icon">📞</div>
+            <h3>Partnership ready</h3>
+            <p>Includes your branding, contact info, and a direct pitch path for clubs and associations.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="dashboard">
+      <div class="container">
+        <div class="section-title">
+          <div class="eyebrow">League dashboard</div>
+          <h2>A working admin-style platform that starts clean and grows with your data.</h2>
+          <p>
+            The tabs below switch for real. The uploaded roster saves in local storage, so refreshing the page will not wipe everything like a chaotic goblin.
+          </p>
+        </div>
+
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="overview">Overview</button>
+          <button class="tab-btn" data-tab="uploads">Uploads</button>
+          <button class="tab-btn" data-tab="playersTab">Players</button>
+        </div>
+
+        <div class="tab-panel active" id="overview">
+          <div class="dashboard-grid">
+            <div class="card panel-pad">
+              <div class="panel-title">Platform overview</div>
+              <p class="panel-subtitle">This fills automatically as player records are uploaded.</p>
+              <div class="empty-stat-grid" style="margin-top:18px;">
+                <div class="empty-metric">
+                  <div class="label">Top Batter</div>
+                  <div class="value" id="topBatterValue">—</div>
+                </div>
+                <div class="empty-metric">
+                  <div class="label">Top Bowler</div>
+                  <div class="value" id="topBowlerValue">—</div>
+                </div>
+                <div class="empty-metric">
+                  <div class="label">Avg Strike Rate</div>
+                  <div class="value" id="avgStrikeRateValue">0</div>
+                </div>
+                <div class="empty-metric">
+                  <div class="label">Roster Health</div>
+                  <div class="value" id="rosterHealthValue">Empty</div>
+                </div>
+              </div>
+              <div class="empty-state" id="overviewEmpty" style="margin-top:18px;">
+                <strong>No player data yet</strong>
+                <p>Upload your first CSV in the Uploads tab. Once you do, this section will update automatically.</p>
+              </div>
+            </div>
+
+            <div class="card panel-pad">
+              <div class="panel-title">Quick actions</div>
+              <p class="panel-subtitle">Useful while onboarding clubs and testing the site.</p>
+              <div class="stack" style="margin-top:16px;">
+                <button class="admin-link" id="openUploadsBtn">Upload player CSV →</button>
+                <button class="admin-link" id="loadSampleBtn">Load tiny sample dataset →</button>
+                <button class="admin-link" id="clearDataBtn">Clear stored platform data →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="uploads">
+          <div class="dashboard-grid">
+            <div class="card panel-pad" id="uploadsCard">
+              <div class="panel-title">Upload player data</div>
+              <p class="panel-subtitle">Accepted columns: name, team, role, runs, wickets, strikeRate, average, economy, catches</p>
+
+              <div class="upload-box" style="margin-top:18px;" id="dropZone">
+                <div class="upload-icon">⬆️</div>
+                <div style="font-size:20px; font-weight:800;">Drag and drop a CSV file</div>
+                <div class="upload-meta">or choose a file below to import your first roster</div>
+                <div style="margin-top:18px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+                  <input type="file" id="csvFileInput" accept=".csv" class="hidden" />
+                  <button class="btn btn-primary" id="chooseFileBtn">Choose CSV File</button>
+                  <button class="btn btn-secondary" id="downloadTemplateBtn">Download CSV Template</button>
+                </div>
+                <div class="helper" id="uploadStatus">
+                  No file uploaded yet. Once imported, players will appear in the Players tab and overview cards will update.
+                </div>
+              </div>
+            </div>
+
+            <div class="card panel-pad">
+              <div class="panel-title">Upload notes</div>
+              <p class="panel-subtitle">Keep the CSV simple for your first version.</p>
+              <div class="helper" style="margin-top:18px;">
+                <strong>Recommended first CSV columns:</strong><br>
+                name, team, role, runs, wickets, strikeRate, average, economy, catches
+                <br><br>
+                Example row:<br>
+                John Smith, Albany Strikers, All-Rounder, 120, 8, 132.4, 30, 6.2, 3
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="playersTab">
+          <div class="players-layout">
+            <div class="card panel-pad">
+              <div class="panel-title">Players</div>
+              <p class="panel-subtitle">Search by name, team, or role</p>
+              <div class="search-box">
+                <span>🔍</span>
+                <input type="text" id="playerSearch" placeholder="Search players" />
+              </div>
+              <div class="muted" style="font-size:13px; margin-bottom:12px;">Tip: upload a CSV first, then search your roster here.</div>
+              <div class="player-list" id="playerList"></div>
+            </div>
+
+            <div class="card panel-pad">
+              <div class="player-header">
+                <div>
+                  <div class="panel-title" id="playerName">No player selected</div>
+                  <p class="panel-subtitle" id="playerMeta">Upload a CSV to populate this profile panel.</p>
+                </div>
+                <div class="tag" id="playerTag">Empty state</div>
+              </div>
+
+              <div class="empty-state" id="playerEmpty" style="margin-top:18px;">
+                <strong>No players available yet</strong>
+                <p>After you upload data, click a player on the left to inspect their stats here.</p>
+              </div>
+
+              <div id="playerDetails" class="hidden" style="margin-top:18px;">
+                <div class="empty-stat-grid">
+                  <div class="empty-metric"><div class="label">Runs</div><div class="value" id="detailRuns">0</div></div>
+                  <div class="empty-metric"><div class="label">Wickets</div><div class="value" id="detailWickets">0</div></div>
+                  <div class="empty-metric"><div class="label">Strike Rate</div><div class="value" id="detailStrikeRate">0</div></div>
+                  <div class="empty-metric"><div class="label">Average</div><div class="value" id="detailAverage">0</div></div>
+                  <div class="empty-metric"><div class="label">Economy</div><div class="value" id="detailEconomy">0</div></div>
+                  <div class="empty-metric"><div class="label">Catches</div><div class="value" id="detailCatches">0</div></div>
+                  <div class="empty-metric"><div class="label">Team</div><div class="value" id="detailTeam">—</div></div>
+                  <div class="empty-metric"><div class="label">Role</div><div class="value" id="detailRole">—</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="contact">
+      <div class="container">
+        <div class="section-title">
+          <div class="eyebrow">Contact</div>
+          <h2>Ready to pitch it, share it, and onboard the first real users.</h2>
+          <p>
+            This form uses mailto so clubs can contact you directly from a static GitHub Pages site. That keeps things simple until you add a backend later.
+          </p>
+        </div>
+
+        <div class="contact-grid">
+          <div class="card panel-pad">
+            <div class="panel-title">Let’s talk</div>
+            <p class="panel-subtitle">Free, no-obligation intro call</p>
+            <div class="contact-list" style="margin-top:18px;">
+              <div class="contact-item">📧 aniketdixit2010@gmail.com</div>
+              <div class="contact-item">📞 +1 518-491-6872</div>
+              <div class="contact-item">📍 Capital District, New York</div>
+            </div>
+          </div>
+
+          <div class="card panel-pad">
+            <div class="panel-title">Request a call</div>
+            <p class="panel-subtitle">This opens the user’s email app with your contact info prefilled.</p>
+            <form id="contactForm">
+              <div class="form-grid">
+                <input type="text" id="contactName" placeholder="Your name" required />
+                <input type="text" id="contactOrg" placeholder="Organization" required />
+                <input type="email" id="contactEmail" placeholder="Email" required />
+                <input type="text" id="contactPhone" placeholder="Phone" />
+              </div>
+              <textarea id="contactMessage" placeholder="Tell me about your league, team data, or what you’d like to track" required></textarea>
+              <div>
+                <button class="btn btn-primary" type="submit">Send request</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer container">
+    NY Ovals IQ • Built for cricket analytics, player development, and partnerships across the Capital District.
+  </footer>
+
+  <script>
+    const STORAGE_KEY = "ny_ovals_iq_players";
+
+    const elements = {
+      metricPlayers: document.getElementById("metricPlayers"),
+      metricTeams: document.getElementById("metricTeams"),
+      metricRuns: document.getElementById("metricRuns"),
+      metricWickets: document.getElementById("metricWickets"),
+      heroPlayerCount: document.getElementById("heroPlayerCount"),
+      heroTeamCount: document.getElementById("heroTeamCount"),
+      teamBars: document.getElementById("teamBars"),
+      playerList: document.getElementById("playerList"),
+      playerSearch: document.getElementById("playerSearch"),
+      playerName: document.getElementById("playerName"),
+      playerMeta: document.getElementById("playerMeta"),
+      playerTag: document.getElementById("playerTag"),
+      playerEmpty: document.getElementById("playerEmpty"),
+      playerDetails: document.getElementById("playerDetails"),
+      uploadStatus: document.getElementById("uploadStatus"),
+      topBatterValue: document.getElementById("topBatterValue"),
+      topBowlerValue: document.getElementById("topBowlerValue"),
+      avgStrikeRateValue: document.getElementById("avgStrikeRateValue"),
+      rosterHealthValue: document.getElementById("rosterHealthValue"),
+      overviewEmpty: document.getElementById("overviewEmpty"),
+      detailRuns: document.getElementById("detailRuns"),
+      detailWickets: document.getElementById("detailWickets"),
+      detailStrikeRate: document.getElementById("detailStrikeRate"),
+      detailAverage: document.getElementById("detailAverage"),
+      detailEconomy: document.getElementById("detailEconomy"),
+      detailCatches: document.getElementById("detailCatches"),
+      detailTeam: document.getElementById("detailTeam"),
+      detailRole: document.getElementById("detailRole"),
+      csvFileInput: document.getElementById("csvFileInput"),
+      chooseFileBtn: document.getElementById("chooseFileBtn"),
+      downloadTemplateBtn: document.getElementById("downloadTemplateBtn"),
+      loadSampleBtn: document.getElementById("loadSampleBtn"),
+      clearDataBtn: document.getElementById("clearDataBtn"),
+      openUploadsBtn: document.getElementById("openUploadsBtn"),
+      contactForm: document.getElementById("contactForm"),
+    };
+
+    let players = loadPlayers();
+    let selectedPlayerIndex = players.length ? 0 : -1;
+
+    function loadPlayers() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function savePlayers() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
+    }
+
+    function toNumber(value) {
+      const n = Number(String(value || "").trim());
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/).filter(Boolean);
+      if (!lines.length) return [];
+      const headers = splitCSVLine(lines[0]).map(h => h.trim());
+      return lines.slice(1).map(line => {
+        const values = splitCSVLine(line);
+        const row = {};
+        headers.forEach((header, index) => {
+          row[header] = (values[index] || "").trim();
+        });
+        return {
+          name: row.name || "Unnamed Player",
+          team: row.team || "Unassigned",
+          role: row.role || "Player",
+          runs: toNumber(row.runs),
+          wickets: toNumber(row.wickets),
+          strikeRate: toNumber(row.strikeRate),
+          average: toNumber(row.average),
+          economy: toNumber(row.economy),
+          catches: toNumber(row.catches),
+        };
+      }).filter(player => player.name);
+    }
+
+    function splitCSVLine(line) {
+      const result = [];
+      let current = "";
+      let insideQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (insideQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            insideQuotes = !insideQuotes;
+          }
+        } else if (char === ',' && !insideQuotes) {
+          result.push(current);
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
+    }
+
+    function renderAll() {
+      renderMetrics();
+      renderTeamBars();
+      renderOverview();
+      renderPlayerList();
+      renderSelectedPlayer();
+    }
+
+    function renderMetrics() {
+      const teamSet = new Set(players.map(p => p.team).filter(Boolean));
+      const totalRuns = players.reduce((sum, p) => sum + toNumber(p.runs), 0);
+      const totalWickets = players.reduce((sum, p) => sum + toNumber(p.wickets), 0);
+
+      elements.metricPlayers.textContent = players.length;
+      elements.metricTeams.textContent = teamSet.size;
+      elements.metricRuns.textContent = totalRuns;
+      elements.metricWickets.textContent = totalWickets;
+      elements.heroPlayerCount.textContent = players.length;
+      elements.heroTeamCount.textContent = teamSet.size;
+    }
+
+    function renderTeamBars() {
+      if (!players.length) {
+        elements.teamBars.innerHTML = `
+          <div class="bar-row">
+            <span>No teams yet</span>
+            <div class="bar-track"><div class="bar-fill" style="width:0%"></div></div>
+            <strong>0</strong>
+          </div>
+        `;
+        return;
+      }
+
+      const counts = {};
+      players.forEach(player => {
+        counts[player.team] = (counts[player.team] || 0) + 1;
+      });
+      const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      const max = entries[0][1] || 1;
+
+      elements.teamBars.innerHTML = entries.map(([team, count]) => `
+        <div class="bar-row">
+          <span>${escapeHtml(team)}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${(count / max) * 100}%"></div></div>
+          <strong>${count}</strong>
+        </div>
+      `).join("");
+    }
+
+    function renderOverview() {
+      if (!players.length) {
+        elements.topBatterValue.textContent = "—";
+        elements.topBowlerValue.textContent = "—";
+        elements.avgStrikeRateValue.textContent = "0";
+        elements.rosterHealthValue.textContent = "Empty";
+        elements.overviewEmpty.classList.remove("hidden");
+        return;
+      }
+
+      const topBatter = [...players].sort((a, b) => b.runs - a.runs)[0];
+      const topBowler = [...players].sort((a, b) => b.wickets - a.wickets)[0];
+      const avgStrikeRate = players.reduce((sum, p) => sum + toNumber(p.strikeRate), 0) / players.length;
+
+      elements.topBatterValue.textContent = topBatter ? topBatter.name : "—";
+      elements.topBowlerValue.textContent = topBowler ? topBowler.name : "—";
+      elements.avgStrikeRateValue.textContent = avgStrikeRate ? avgStrikeRate.toFixed(1) : "0";
+      elements.rosterHealthValue.textContent = players.length >= 10 ? "Strong" : players.length >= 5 ? "Growing" : "Starting";
+      elements.overviewEmpty.classList.add("hidden");
+    }
+
+    function getFilteredPlayers() {
+      const q = elements.playerSearch.value.trim().toLowerCase();
+      if (!q) return players;
+      return players.filter(player =>
+        player.name.toLowerCase().includes(q) ||
+        player.team.toLowerCase().includes(q) ||
+        player.role.toLowerCase().includes(q)
+      );
+    }
+
+    function renderPlayerList() {
+      const filtered = getFilteredPlayers();
+
+      if (!players.length) {
+        elements.playerList.innerHTML = `
+          <div class="empty-state">
+            <strong>No players uploaded</strong>
+            <p>Use the Uploads tab to import your first roster CSV.</p>
+          </div>
+        `;
+        return;
+      }
+
+      if (!filtered.length) {
+        elements.playerList.innerHTML = `
+          <div class="empty-state">
+            <strong>No matching players</strong>
+            <p>Try a different search term.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const selected = players[selectedPlayerIndex];
+      elements.playerList.innerHTML = filtered.map(player => `
+        <button class="player-card ${selected && selected.name === player.name && selected.team === player.team ? "active" : ""}" data-name="${escapeAttr(player.name)}" data-team="${escapeAttr(player.team)}">
+          <h4>${escapeHtml(player.name)}</h4>
+          <p>${escapeHtml(player.team)} • ${escapeHtml(player.role)}</p>
+        </button>
+      `).join("");
+
+      document.querySelectorAll(".player-card").forEach(button => {
+        button.addEventListener("click", () => {
+          const name = button.dataset.name;
+          const team = button.dataset.team;
+          selectedPlayerIndex = players.findIndex(player => player.name === name && player.team === team);
+          renderPlayerList();
+          renderSelectedPlayer();
+        });
+      });
+    }
+
+    function renderSelectedPlayer() {
+      if (!players.length || selectedPlayerIndex < 0 || !players[selectedPlayerIndex]) {
+        elements.playerName.textContent = "No player selected";
+        elements.playerMeta.textContent = "Upload a CSV to populate this profile panel.";
+        elements.playerTag.textContent = "Empty state";
+        elements.playerEmpty.classList.remove("hidden");
+        elements.playerDetails.classList.add("hidden");
+        return;
+      }
+
+      const player = players[selectedPlayerIndex];
+      elements.playerName.textContent = player.name;
+      elements.playerMeta.textContent = `${player.team} • ${player.role}`;
+      elements.playerTag.textContent = "Roster player";
+      elements.playerEmpty.classList.add("hidden");
+      elements.playerDetails.classList.remove("hidden");
+
+      elements.detailRuns.textContent = player.runs;
+      elements.detailWickets.textContent = player.wickets;
+      elements.detailStrikeRate.textContent = player.strikeRate;
+      elements.detailAverage.textContent = player.average;
+      elements.detailEconomy.textContent = player.economy;
+      elements.detailCatches.textContent = player.catches;
+      elements.detailTeam.textContent = player.team;
+      elements.detailRole.textContent = player.role;
+    }
+
+    function handleCSVFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = parseCSV(String(reader.result || ""));
+          if (!parsed.length) {
+            elements.uploadStatus.textContent = "Could not find valid player rows in that CSV. Double-check your headers.";
+            return;
+          }
+          players = parsed;
+          selectedPlayerIndex = 0;
+          savePlayers();
+          renderAll();
+          elements.uploadStatus.textContent = `Uploaded ${players.length} players successfully from ${file.name}.`;
+          switchTab("playersTab");
+        } catch (error) {
+          elements.uploadStatus.textContent = "That CSV could not be processed. Please check the format and try again.";
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function downloadTemplate() {
+      const template = [
+        "name,team,role,runs,wickets,strikeRate,average,economy,catches",
+        "John Smith,Albany Strikers,All-Rounder,120,8,132.4,30,6.2,3",
+        "Rahul Patel,Capital Chargers,Batter,178,1,140.1,35.6,0,4"
+      ].join("\n");
+      const blob = new Blob([template], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "ny-ovals-iq-template.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function loadSampleData() {
+      players = [
+        { name: "Arjun Patel", team: "Albany Strikers", role: "All-Rounder", runs: 120, wickets: 6, strikeRate: 132.4, average: 30, economy: 6.2, catches: 3 },
+        { name: "Rohan Singh", team: "Capital Chargers", role: "Batter", runs: 178, wickets: 0, strikeRate: 141.8, average: 44.5, economy: 0, catches: 4 },
+        { name: "Sameer Khan", team: "Albany Strikers", role: "Bowler", runs: 36, wickets: 11, strikeRate: 108.1, average: 12, economy: 5.7, catches: 2 },
+      ];
+      selectedPlayerIndex = 0;
+      savePlayers();
+      renderAll();
+      elements.uploadStatus.textContent = "Loaded a small sample dataset so you can test the platform layout.";
+    }
+
+    function clearData() {
+      players = [];
+      selectedPlayerIndex = -1;
+      savePlayers();
+      renderAll();
+      elements.uploadStatus.textContent = "All stored platform data has been cleared.";
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value);
+    }
+
+    function switchTab(targetId) {
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.tab === targetId);
+      });
+      document.querySelectorAll(".tab-panel").forEach(panel => {
+        panel.classList.toggle("active", panel.id === targetId);
+      });
+    }
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+    });
+
+    elements.playerSearch.addEventListener("input", renderPlayerList);
+    elements.chooseFileBtn.addEventListener("click", () => elements.csvFileInput.click());
+    elements.csvFileInput.addEventListener("change", (event) => handleCSVFile(event.target.files[0]));
+    elements.downloadTemplateBtn.addEventListener("click", downloadTemplate);
+    elements.loadSampleBtn.addEventListener("click", loadSampleData);
+    elements.clearDataBtn.addEventListener("click", clearData);
+    elements.openUploadsBtn.addEventListener("click", () => switchTab("uploads"));
+
+    const dropZone = document.getElementById("dropZone");
+    ["dragenter", "dragover"].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = "rgba(249,115,22,0.6)";
+        dropZone.style.background = "rgba(249,115,22,0.08)";
+      });
+    });
+    ["dragleave", "drop"].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = "rgba(255,255,255,0.18)";
+        dropZone.style.background = "rgba(15,23,42,0.34)";
+      });
+    });
+    dropZone.addEventListener("drop", (e) => {
+      const file = e.dataTransfer.files[0];
+      if (file) handleCSVFile(file);
+    });
+
+    elements.contactForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = document.getElementById("contactName").value.trim();
+      const org = document.getElementById("contactOrg").value.trim();
+      const email = document.getElementById("contactEmail").value.trim();
+      const phone = document.getElementById("contactPhone").value.trim();
+      const message = document.getElementById("contactMessage").value.trim();
+      const subject = encodeURIComponent(`NY Ovals IQ Inquiry from ${name}`);
+      const body = encodeURIComponent(
+        `Name: ${name}\nOrganization: ${org}\nEmail: ${email}\nPhone: ${phone}\n\nMessage:\n${message}`
+      );
+      window.location.href = `mailto:aniketdixit2010@gmail.com?subject=${subject}&body=${body}`;
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
