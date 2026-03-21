@@ -616,6 +616,26 @@
     <section class="section" id="features">
       <div class="container">
         <div class="section-title">
+          <div class="card panel-pad" style="margin-bottom:20px;">
+  <div class="panel-title">Protected Controls</div>
+  <p class="panel-subtitle">
+    Viewers can explore the site, but predictions and data entry are locked.
+  </p>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;">
+    <input
+      id="controlPinInput"
+      type="password"
+      placeholder="Enter PIN to unlock controls"
+      style="max-width:280px;"
+    />
+    <button class="btn btn-primary" id="unlockControlsBtn">Unlock</button>
+  </div>
+
+  <p id="controlPinError" style="color:#fb7185; margin-top:10px; display:none;">
+    Wrong PIN
+  </p>
+</div>
           <div class="eyebrow">What it does</div>
           <h2>Built to feel like a real cricket intelligence platform, not a sad spreadsheet in disguise.</h2>
           <p>
