@@ -1771,7 +1771,47 @@
     const file = e.dataTransfer.files[0];
     if (file) handleCSVFile(file);
   });
+document.getElementById("addPlayerBtn").addEventListener("click", () => {
+  const player = {
+    name: safeText(document.getElementById("manualName").value),
+    team: safeText(document.getElementById("manualTeam").value),
+    opponent: safeText(document.getElementById("manualOpponent").value) || "Opponent",
+    role: safeText(document.getElementById("manualRole").value) || "Player",
+    runs: toNumber(document.getElementById("manualRuns").value),
+    wickets: toNumber(document.getElementById("manualWickets").value),
+    strikeRate: toNumber(document.getElementById("manualSR").value),
+    average: toNumber(document.getElementById("manualAvg").value),
+    economy: toNumber(document.getElementById("manualEco").value),
+    catches: 0,
+    matchesPlayed: Math.max(1, toNumber(document.getElementById("manualMatches").value))
+  };
 
+  if (!player.name || !player.team) {
+    alert("Name and Team are required");
+    return;
+  }
+
+  players.push(player);
+  savePlayers();
+  renderAll();
+
+  alert("Player added successfully");
+
+  [
+    "manualName",
+    "manualTeam",
+    "manualOpponent",
+    "manualRole",
+    "manualRuns",
+    "manualWickets",
+    "manualSR",
+    "manualAvg",
+    "manualEco",
+    "manualMatches"
+  ].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+});
   elements.contactForm.addEventListener("submit", e => {
     e.preventDefault();
     const name = document.getElementById("contactName").value.trim();
