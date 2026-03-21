@@ -804,12 +804,12 @@
                 <div class="upload-meta">or choose a file below to import your first roster</div>
                 <div style="margin-top:18px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
                   <input type="file" id="csvFileInput" accept=".csv" class="hidden" />
-                  <button class="btn btn-primary" id="chooseFileBtn">Choose CSV File</button>
-                  <button class="btn btn-secondary" id="downloadTemplateBtn">Download CSV Template</button>
+<button class="btn btn-primary protected-control" id="chooseFileBtn">Choose CSV File</button>            
+<button class="btn btn-secondary protected-control" id="downloadTemplateBtn">Download CSV Template</button>       
                 </div>
                 <div style="margin-top:16px; display:grid; gap:12px; max-width:720px; margin-left:auto; margin-right:auto;">
                   <input type="url" id="csvUrlInput" placeholder="Paste a public CricClubs CSV link" />
-                  <button class="btn btn-secondary" id="fetchCsvBtn" style="justify-content:center;">Fetch CricClubs CSV Link</button>
+<button class="btn btn-secondary protected-control" id="fetchCsvBtn" style="justify-content:center;">Fetch CricClubs CSV Link</button>
                 </div>
                 <div class="helper" id="uploadStatus">
                   No file uploaded yet. You can either upload a CSV file directly or paste a public CricClubs CSV link. If the link is blocked by CricClubs or browser CORS rules, download the CSV manually and upload it here instead.
