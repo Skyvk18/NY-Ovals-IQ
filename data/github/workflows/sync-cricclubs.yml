@@ -1,1 +1,42 @@
-.github/workflows/sync-cricclubs.yml
+name: Sync CricClubs Data
+
+on:
+  schedule:
+    - cron: "15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-cricclubs
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run sync script
+        env:
+          CRICCLUBS_CSV_URL: ${{ secrets.CRICCLUBS_CSV_URL }}
+        run: python scripts/sync_cricclubs.py
+
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/players.json data/last_sync.json
+          git diff --staged --quiet || git commit -m "Auto-sync CricClubs data"
+          git push
