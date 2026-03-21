@@ -880,657 +880,889 @@
     NY Ovals IQ • Built for cricket analytics, player development, and partnerships across the Capital District.
   </footer>
 
-  <script>
-    const STORAGE_KEY = "ny_ovals_iq_players";
+ <script>
+  const STORAGE_KEY = "ny_ovals_iq_players";
 
-    const elements = {
-      metricPlayers: document.getElementById("metricPlayers"),
-      metricTeams: document.getElementById("metricTeams"),
-      metricRuns: document.getElementById("metricRuns"),
-      metricWickets: document.getElementById("metricWickets"),
-      heroPlayerCount: document.getElementById("heroPlayerCount"),
-      heroTeamCount: document.getElementById("heroTeamCount"),
-      teamBars: document.getElementById("teamBars"),
-      playerList: document.getElementById("playerList"),
-      playerSearch: document.getElementById("playerSearch"),
-      playerName: document.getElementById("playerName"),
-      playerMeta: document.getElementById("playerMeta"),
-      playerTag: document.getElementById("playerTag"),
-      playerEmpty: document.getElementById("playerEmpty"),
-      playerDetails: document.getElementById("playerDetails"),
-      uploadStatus: document.getElementById("uploadStatus"),
-      topBatterValue: document.getElementById("topBatterValue"),
-      topBowlerValue: document.getElementById("topBowlerValue"),
-      avgStrikeRateValue: document.getElementById("avgStrikeRateValue"),
-      rosterHealthValue: document.getElementById("rosterHealthValue"),
-      overviewEmpty: document.getElementById("overviewEmpty"),
-      detailRuns: document.getElementById("detailRuns"),
-      detailWickets: document.getElementById("detailWickets"),
-      detailStrikeRate: document.getElementById("detailStrikeRate"),
-      detailAverage: document.getElementById("detailAverage"),
-      detailEconomy: document.getElementById("detailEconomy"),
-      detailCatches: document.getElementById("detailCatches"),
-      detailTeam: document.getElementById("detailTeam"),
-      detailRole: document.getElementById("detailRole"),
-      matchFormat: document.getElementById("matchFormat"),
-      csvFileInput: document.getElementById("csvFileInput"),
-      chooseFileBtn: document.getElementById("chooseFileBtn"),
-      downloadTemplateBtn: document.getElementById("downloadTemplateBtn"),
-      loadSampleBtn: document.getElementById("loadSampleBtn"),
-      clearDataBtn: document.getElementById("clearDataBtn"),
-      openUploadsBtn: document.getElementById("openUploadsBtn"),
-      contactForm: document.getElementById("contactForm"),
-      teamA: document.getElementById("teamA"),
-      teamB: document.getElementById("teamB"),
-      predictBtn: document.getElementById("predictBtn"),
-      predictionResult: document.getElementById("predictionResult"),
-      playerSelect: document.getElementById("playerSelect"),
-      predictPlayerBtn: document.getElementById("predictPlayerBtn"),
-      playerPredictionResult: document.getElementById("playerPredictionResult"),
-      csvUrlInput: document.getElementById("csvUrlInput"),
-      fetchCsvBtn: document.getElementById("fetchCsvBtn"),
-    };
+  const elements = {
+    metricPlayers: document.getElementById("metricPlayers"),
+    metricTeams: document.getElementById("metricTeams"),
+    metricRuns: document.getElementById("metricRuns"),
+    metricWickets: document.getElementById("metricWickets"),
+    heroPlayerCount: document.getElementById("heroPlayerCount"),
+    heroTeamCount: document.getElementById("heroTeamCount"),
+    teamBars: document.getElementById("teamBars"),
+    playerList: document.getElementById("playerList"),
+    playerSearch: document.getElementById("playerSearch"),
+    playerName: document.getElementById("playerName"),
+    playerMeta: document.getElementById("playerMeta"),
+    playerTag: document.getElementById("playerTag"),
+    playerEmpty: document.getElementById("playerEmpty"),
+    playerDetails: document.getElementById("playerDetails"),
+    uploadStatus: document.getElementById("uploadStatus"),
+    topBatterValue: document.getElementById("topBatterValue"),
+    topBowlerValue: document.getElementById("topBowlerValue"),
+    avgStrikeRateValue: document.getElementById("avgStrikeRateValue"),
+    rosterHealthValue: document.getElementById("rosterHealthValue"),
+    overviewEmpty: document.getElementById("overviewEmpty"),
+    detailRuns: document.getElementById("detailRuns"),
+    detailWickets: document.getElementById("detailWickets"),
+    detailStrikeRate: document.getElementById("detailStrikeRate"),
+    detailAverage: document.getElementById("detailAverage"),
+    detailEconomy: document.getElementById("detailEconomy"),
+    detailCatches: document.getElementById("detailCatches"),
+    detailTeam: document.getElementById("detailTeam"),
+    detailRole: document.getElementById("detailRole"),
+    matchFormat: document.getElementById("matchFormat"),
+    csvFileInput: document.getElementById("csvFileInput"),
+    chooseFileBtn: document.getElementById("chooseFileBtn"),
+    downloadTemplateBtn: document.getElementById("downloadTemplateBtn"),
+    loadSampleBtn: document.getElementById("loadSampleBtn"),
+    clearDataBtn: document.getElementById("clearDataBtn"),
+    openUploadsBtn: document.getElementById("openUploadsBtn"),
+    contactForm: document.getElementById("contactForm"),
+    teamA: document.getElementById("teamA"),
+    teamB: document.getElementById("teamB"),
+    predictBtn: document.getElementById("predictBtn"),
+    predictionResult: document.getElementById("predictionResult"),
+    playerSelect: document.getElementById("playerSelect"),
+    predictPlayerBtn: document.getElementById("predictPlayerBtn"),
+    playerPredictionResult: document.getElementById("playerPredictionResult"),
+    csvUrlInput: document.getElementById("csvUrlInput"),
+    fetchCsvBtn: document.getElementById("fetchCsvBtn"),
+  };
 
-    let players = loadPlayers();
-    let selectedPlayerIndex = players.length ? 0 : -1;
+  let players = loadPlayers();
+  let selectedPlayerIndex = players.length ? 0 : -1;
 
-    function loadPlayers() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
-      } catch {
-        return [];
-      }
+  function loadPlayers() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
     }
+  }
 
-    function savePlayers() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
-    }
+  function savePlayers() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
+  }
 
-    function toNumber(value) {
-      const n = Number(String(value || "").trim());
-      return Number.isFinite(n) ? n : 0;
-    }
+  function safeText(value) {
+    return String(value ?? "").trim();
+  }
 
-    function parseCSV(text) {
-      const cleanedText = text.replace(/^\uFEFF/, "");
-      const lines = cleanedText.trim().split(/\r?\n/).filter(Boolean);
-      if (!lines.length) return [];
-      const headers = splitCSVLine(lines[0]).map(h => normalizeHeader(h));
-      return lines.slice(1).map(line => {
-        const values = splitCSVLine(line);
-        const row = {};
-        headers.forEach((header, index) => {
-          row[header] = (values[index] || "").trim();
-        });
+  function toNumber(value) {
+    const cleaned = safeText(value).replace(/,/g, "");
+    if (!cleaned) return 0;
+    const n = Number(cleaned);
+    return Number.isFinite(n) ? n : 0;
+  }
 
-        const playerName = row.name || row.playername || row.player || row.fullname || row.full_name || row.player_name;
-        const playerTeam = row.team || row.club || row.squad;
-        const playerRole = row.role || row.type || row.position;
-        const playerMatches = toNumber(row.matchesplayed || row.matches || row.matchplayed || row.innings || row.games);
+  function oversToDecimal(value) {
+    const text = safeText(value);
+    if (!text) return 0;
+    if (!text.includes(".")) return toNumber(text);
+    const [oversPart, ballsPart] = text.split(".");
+    const overs = toNumber(oversPart);
+    const balls = Math.min(5, toNumber(ballsPart));
+    return overs + balls / 6;
+  }
 
-        return {
-          name: playerName || "Unnamed Player",
-          team: playerTeam || "Unassigned",
-          role: playerRole || "Player",
-          runs: toNumber(row.runs),
-          wickets: toNumber(row.wickets),
-          strikeRate: toNumber(row.strikerate || row.strike_rate),
-          average: toNumber(row.average || row.avg),
-          economy: toNumber(row.economy || row.econ),
-          catches: toNumber(row.catches || row.catch),
-          matchesPlayed: Math.max(1, playerMatches || 1),
-        };
-      }).filter(player => player.name);
-    }
+  function normalizeHeader(header) {
+    return String(header || "")
+      .replace(/^\uFEFF/, "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .replace(/[^a-z0-9_]/g, "");
+  }
 
-    function normalizeHeader(header) {
-      return String(header || "")
-        .replace(/^\uFEFF/, "")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "")
-        .replace(/[^a-z0-9_]/g, "");
-    }
+  function splitCSVLine(line) {
+    const result = [];
+    let current = "";
+    let insideQuotes = false;
 
-    function splitCSVLine(line) {
-      const result = [];
-      let current = "";
-      let insideQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"') {
-          if (insideQuotes && line[i + 1] === '"') {
-            current += '"';
-            i++;
-          } else {
-            insideQuotes = !insideQuotes;
-          }
-        } else if (char === ',' && !insideQuotes) {
-          result.push(current);
-          current = "";
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"') {
+        if (insideQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
         } else {
-          current += char;
+          insideQuotes = !insideQuotes;
         }
+      } else if ((char === "," || char === "\t") && !insideQuotes) {
+        result.push(current);
+        current = "";
+      } else {
+        current += char;
       }
-      result.push(current);
-      return result;
     }
 
-    function renderAll() {
-      renderMetrics();
-      renderTeamBars();
-      renderOverview();
-      renderPlayerList();
-      renderSelectedPlayer();
-      populateTeams();
-      populatePlayerDropdown();
-    }
+    result.push(current);
+    return result;
+  }
 
-    function renderMetrics() {
-      const teamSet = new Set(players.map(p => p.team).filter(Boolean));
-      const totalRuns = players.reduce((sum, p) => sum + toNumber(p.runs), 0);
-      const totalWickets = players.reduce((sum, p) => sum + toNumber(p.wickets), 0);
-      elements.metricPlayers.textContent = players.length;
-      elements.metricTeams.textContent = teamSet.size;
-      elements.metricRuns.textContent = totalRuns;
-      elements.metricWickets.textContent = totalWickets;
-      elements.heroPlayerCount.textContent = players.length;
-      elements.heroTeamCount.textContent = teamSet.size;
-    }
+  function rowText(row) {
+    return row.map(safeText).filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+  }
 
-    function renderTeamBars() {
-      if (!players.length) {
-        elements.teamBars.innerHTML = `
-          <div class="bar-row">
-            <span>No teams yet</span>
-            <div class="bar-track"><div class="bar-fill" style="width:0%"></div></div>
-            <strong>0</strong>
-          </div>
-        `;
-        return;
+  function cleanSectionName(value) {
+    return safeText(value)
+      .replace(/^,+/, "")
+      .replace(/\s+Batting$/i, "")
+      .replace(/\s+Bowling$/i, "")
+      .trim();
+  }
+
+  function extractMatchTeams(rows) {
+    for (const row of rows) {
+      const text = rowText(row);
+      const match = text.match(/(.+?)\s+vs\s+(.+)/i);
+      if (match) {
+        return {
+          team1: match[1].trim(),
+          team2: match[2].trim()
+        };
       }
-
-      const counts = {};
-      players.forEach(player => { counts[player.team] = (counts[player.team] || 0) + 1; });
-      const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-      const max = entries[0][1] || 1;
-
-      elements.teamBars.innerHTML = entries.map(([team, count]) => `
-        <div class="bar-row">
-          <span>${escapeHtml(team)}</span>
-          <div class="bar-track"><div class="bar-fill" style="width:${(count / max) * 100}%"></div></div>
-          <strong>${count}</strong>
-        </div>
-      `).join("");
     }
+    return { team1: "", team2: "" };
+  }
 
-    function renderOverview() {
-      if (!players.length) {
-        elements.topBatterValue.textContent = "—";
-        elements.topBowlerValue.textContent = "—";
-        elements.avgStrikeRateValue.textContent = "0";
-        elements.rosterHealthValue.textContent = "Empty";
-        elements.overviewEmpty.classList.remove("hidden");
-        return;
-      }
-      const topBatter = [...players].sort((a, b) => b.runs - a.runs)[0];
-      const topBowler = [...players].sort((a, b) => b.wickets - a.wickets)[0];
-      const avgStrikeRate = players.reduce((sum, p) => sum + toNumber(p.strikeRate), 0) / players.length;
-      elements.topBatterValue.textContent = topBatter ? topBatter.name : "—";
-      elements.topBowlerValue.textContent = topBowler ? topBowler.name : "—";
-      elements.avgStrikeRateValue.textContent = avgStrikeRate ? avgStrikeRate.toFixed(1) : "0";
-      elements.rosterHealthValue.textContent = players.length >= 10 ? "Strong" : players.length >= 5 ? "Growing" : "Starting";
-      elements.overviewEmpty.classList.add("hidden");
-    }
+  function getOpponentForTeam(teamName, team1, team2) {
+    const t = safeText(teamName).toLowerCase();
+    const a = safeText(team1).toLowerCase();
+    const b = safeText(team2).toLowerCase();
 
-    function getFilteredPlayers() {
-      const q = elements.playerSearch.value.trim().toLowerCase();
-      if (!q) return players;
-      return players.filter(player =>
-        player.name.toLowerCase().includes(q) ||
-        player.team.toLowerCase().includes(q) ||
-        player.role.toLowerCase().includes(q)
+    if (!t) return "Opponent";
+    if (a && t.includes(a)) return team2 || "Opponent";
+    if (b && t.includes(b)) return team1 || "Opponent";
+    return team2 || team1 || "Opponent";
+  }
+
+  function findHeaderIndex(cells, patterns) {
+    return cells.findIndex(cell =>
+      patterns.some(pattern => pattern.test(safeText(cell)))
+    );
+  }
+
+  function parseStandardCSV(lines) {
+    const headers = splitCSVLine(lines[0]).map(h => normalizeHeader(h));
+
+    return lines.slice(1).map(line => {
+      const values = splitCSVLine(line);
+      const row = {};
+
+      headers.forEach((header, index) => {
+        row[header] = safeText(values[index] || "");
+      });
+
+      const playerName =
+        row.name ||
+        row.playername ||
+        row.player ||
+        row.fullname ||
+        row.full_name ||
+        row.player_name;
+
+      const playerTeam = row.team || row.club || row.squad;
+      const playerOpponent = row.opponent || row.vs || row.against;
+      const playerRole = row.role || row.type || row.position;
+      const playerMatches = toNumber(
+        row.matchesplayed || row.matches || row.matchplayed || row.innings || row.games
       );
-    }
-
-    function renderPlayerList() {
-      const filtered = getFilteredPlayers();
-      if (!players.length) {
-        elements.playerList.innerHTML = `
-          <div class="empty-state">
-            <strong>No players uploaded</strong>
-            <p>Use the Uploads tab to import your first roster CSV.</p>
-          </div>
-        `;
-        return;
-      }
-      if (!filtered.length) {
-        elements.playerList.innerHTML = `
-          <div class="empty-state">
-            <strong>No matching players</strong>
-            <p>Try a different search term.</p>
-          </div>
-        `;
-        return;
-      }
-
-      const selected = players[selectedPlayerIndex];
-      elements.playerList.innerHTML = filtered.map(player => `
-        <button class="player-card ${selected && selected.name === player.name && selected.team === player.team ? "active" : ""}" data-name="${escapeAttr(player.name)}" data-team="${escapeAttr(player.team)}">
-          <h4>${escapeHtml(player.name)}</h4>
-          <p>${escapeHtml(player.team)} • ${escapeHtml(player.role)}</p>
-        </button>
-      `).join("");
-
-      document.querySelectorAll(".player-card").forEach(button => {
-        button.addEventListener("click", () => {
-          const name = button.dataset.name;
-          const team = button.dataset.team;
-          selectedPlayerIndex = players.findIndex(player => player.name === name && player.team === team);
-          renderPlayerList();
-          renderSelectedPlayer();
-        });
-      });
-    }
-
-    function renderSelectedPlayer() {
-      if (!players.length || selectedPlayerIndex < 0 || !players[selectedPlayerIndex]) {
-        elements.playerName.textContent = "No player selected";
-        elements.playerMeta.textContent = "Upload a CSV to populate this profile panel.";
-        elements.playerTag.textContent = "Empty state";
-        elements.playerEmpty.classList.remove("hidden");
-        elements.playerDetails.classList.add("hidden");
-        return;
-      }
-
-      const player = players[selectedPlayerIndex];
-      elements.playerName.textContent = player.name;
-      elements.playerMeta.textContent = `${player.team} • ${player.role}`;
-      elements.playerTag.textContent = `${player.role || "Player"}`;
-      elements.playerEmpty.classList.add("hidden");
-      elements.playerDetails.classList.remove("hidden");
-      elements.detailRuns.textContent = player.runs;
-      elements.detailWickets.textContent = player.wickets;
-      elements.detailStrikeRate.textContent = player.strikeRate;
-      elements.detailAverage.textContent = player.average;
-      elements.detailEconomy.textContent = player.economy;
-      elements.detailCatches.textContent = player.catches;
-      elements.detailTeam.textContent = player.team;
-      elements.detailRole.textContent = `${player.role} • ${player.matchesPlayed || 1} matches`;
-    }
-
-    function populateTeams() {
-      if (!elements.teamA || !elements.teamB) return;
-      const teams = [...new Set(players.map(p => p.team).filter(Boolean))];
-      elements.teamA.innerHTML = "";
-      elements.teamB.innerHTML = "";
-      if (!teams.length) {
-        elements.teamA.innerHTML = '<option>No teams loaded</option>';
-        elements.teamB.innerHTML = '<option>No teams loaded</option>';
-        return;
-      }
-      teams.forEach((team, index) => {
-        const optionA = document.createElement("option");
-        optionA.value = team;
-        optionA.textContent = team;
-        if (index === 0) optionA.selected = true;
-        elements.teamA.appendChild(optionA);
-
-        const optionB = document.createElement("option");
-        optionB.value = team;
-        optionB.textContent = team;
-        if (index === 1) optionB.selected = true;
-        elements.teamB.appendChild(optionB);
-      });
-      if (teams.length === 1) elements.teamB.value = teams[0];
-    }
-
-    function populatePlayerDropdown() {
-      if (!elements.playerSelect) return;
-      elements.playerSelect.innerHTML = "";
-      if (!players.length) {
-        elements.playerSelect.innerHTML = '<option>No players loaded</option>';
-        return;
-      }
-      players.forEach(player => {
-        const opt = document.createElement("option");
-        opt.value = player.name;
-        opt.textContent = `${player.name} — ${player.team}`;
-        elements.playerSelect.appendChild(opt);
-      });
-    }
-
-    function getPerMatchRuns(player) {
-      const matches = Math.max(1, toNumber(player.matchesPlayed) || 1);
-      const totalRuns = toNumber(player.runs);
-      const avg = toNumber(player.average);
-      if (avg > 0) return avg;
-      return totalRuns / matches;
-    }
-
-    function getPerMatchWickets(player) {
-      const matches = Math.max(1, toNumber(player.matchesPlayed) || 1);
-      return toNumber(player.wickets) / matches;
-    }
-
-    function getFormatConfig() {
-      const format = elements.matchFormat?.value || "t20";
-      const configs = {
-        t10: { overs: 10, battingFactor: 0.62, wicketFactor: 0.65, srBase: 145 },
-        t12: { overs: 12, battingFactor: 0.7, wicketFactor: 0.72, srBase: 140 },
-        t20: { overs: 20, battingFactor: 1, wicketFactor: 1, srBase: 130 },
-        t50: { overs: 50, battingFactor: 2.05, wicketFactor: 1.85, srBase: 95 }
-      };
-      return configs[format] || configs.t20;
-    }
-
-    function getPlayerProjection(player) {
-      const role = String(player.role || "").toLowerCase();
-      const format = getFormatConfig();
-      const baseRuns = getPerMatchRuns(player);
-      const baseWickets = getPerMatchWickets(player);
-      const strikeRate = toNumber(player.strikeRate);
-      const economy = toNumber(player.economy);
-      const catches = toNumber(player.catches) / Math.max(1, toNumber(player.matchesPlayed) || 1);
-
-      let projectedRuns = baseRuns * format.battingFactor;
-      if (strikeRate > 0) projectedRuns *= (0.82 + (strikeRate / format.srBase) * 0.18);
-      if (role.includes("bowler") && !role.includes("all")) projectedRuns *= 0.58;
-      if (role.includes("all")) projectedRuns *= 0.9;
-      projectedRuns += catches * 0.4;
-
-      let projectedWickets = baseWickets * format.wicketFactor;
-      if (economy > 0) projectedWickets *= Math.max(0.6, 1 + (7 - economy) * 0.06);
-      if (role.includes("batter") && !role.includes("all")) projectedWickets *= 0.28;
-      if (role.includes("bowler")) projectedWickets *= 1.18;
-
-      projectedRuns = Math.max(0, Math.min(projectedRuns, format.overs === 50 ? 130 : format.overs === 20 ? 90 : 60));
-      projectedWickets = Math.max(0, Math.min(projectedWickets, format.overs === 50 ? 5 : 4));
 
       return {
-        projectedRuns,
-        projectedWickets,
-        impact: projectedRuns + projectedWickets * 22 + catches * 3
+        name: playerName || "Unnamed Player",
+        team: playerTeam || "Unassigned",
+        opponent: playerOpponent || "Opponent",
+        role: playerRole || "Player",
+        runs: toNumber(row.runs),
+        wickets: toNumber(row.wickets),
+        strikeRate: toNumber(row.strikerate || row.strike_rate),
+        average: toNumber(row.average || row.avg),
+        economy: toNumber(row.economy || row.econ),
+        catches: toNumber(row.catches || row.catch),
+        matchesPlayed: Math.max(1, playerMatches || 1)
+      };
+    }).filter(player => player.name);
+  }
+
+  function parseCricClubsScorecard(text) {
+    const rows = text.split(/\r?\n/).map(line => splitCSVLine(line));
+    const playersMap = new Map();
+    const { team1, team2 } = extractMatchTeams(rows);
+
+    function upsertPlayer(name, updates) {
+      const key = safeText(name).toLowerCase();
+      if (!key) return;
+
+      const existing = playersMap.get(key) || {
+        name: safeText(name),
+        team: updates.team || "Unassigned",
+        opponent: updates.opponent || "Opponent",
+        role: "Player",
+        runs: 0,
+        wickets: 0,
+        strikeRate: 0,
+        average: 0,
+        economy: 0,
+        catches: 0,
+        matchesPlayed: 1
+      };
+
+      const merged = { ...existing, ...updates };
+
+      if (merged.runs > 0 && merged.wickets > 0) merged.role = "All-Rounder";
+      else if (merged.wickets > 0) merged.role = "Bowler";
+      else if (merged.runs > 0) merged.role = "Batter";
+
+      playersMap.set(key, merged);
+    }
+
+    for (let r = 0; r < rows.length; r++) {
+      const row = rows[r].map(safeText);
+      const joined = rowText(row);
+
+      if (/Batting$/i.test(joined)) {
+        const teamName = cleanSectionName(joined);
+        const opponent = getOpponentForTeam(teamName, team1, team2);
+
+        let headerRowIndex = -1;
+        for (let x = r + 1; x < Math.min(rows.length, r + 6); x++) {
+          const probe = rows[x].map(safeText);
+          if (
+            probe.some(cell => /BatsMan|Batsman/i.test(cell)) &&
+            probe.some(cell => /^Runs$/i.test(cell))
+          ) {
+            headerRowIndex = x;
+            break;
+          }
+        }
+        if (headerRowIndex === -1) continue;
+
+        const headers = rows[headerRowIndex].map(safeText);
+        const nameIdx = findHeaderIndex(headers, [/BatsMan|Batsman/i]);
+        const runsIdx = findHeaderIndex(headers, [/^Runs$/i]);
+        const ballsIdx = findHeaderIndex(headers, [/^Balls$/i]);
+
+        for (let x = headerRowIndex + 1; x < rows.length; x++) {
+          const data = rows[x].map(safeText);
+          const textRow = rowText(data);
+
+          if (!textRow) continue;
+          if (/Bowling$/i.test(textRow) || /Fall of Wickets/i.test(textRow) || /^Byes:/i.test(textRow)) break;
+
+          const name = nameIdx >= 0 ? safeText(data[nameIdx]) : "";
+          if (!name || /Total|Extras|Did not bat/i.test(name)) continue;
+
+          const runs = runsIdx >= 0 ? toNumber(data[runsIdx]) : 0;
+          const balls = ballsIdx >= 0 ? toNumber(data[ballsIdx]) : 0;
+          const strikeRate = balls > 0 ? (runs / balls) * 100 : 0;
+
+          upsertPlayer(name, {
+            team: teamName,
+            opponent,
+            role: "Batter",
+            runs,
+            strikeRate: Number(strikeRate.toFixed(1)),
+            average: runs,
+            matchesPlayed: 1
+          });
+        }
+      }
+
+      if (/Bowling$/i.test(joined)) {
+        const teamName = cleanSectionName(joined);
+        const opponent = getOpponentForTeam(teamName, team1, team2);
+
+        let headerRowIndex = -1;
+        for (let x = r + 1; x < Math.min(rows.length, r + 6); x++) {
+          const probe = rows[x].map(safeText);
+          if (
+            probe.some(cell => /^Bowler$/i.test(cell)) &&
+            probe.some(cell => /^Overs$/i.test(cell))
+          ) {
+            headerRowIndex = x;
+            break;
+          }
+        }
+        if (headerRowIndex === -1) continue;
+
+        const headers = rows[headerRowIndex].map(safeText);
+        const nameIdx = findHeaderIndex(headers, [/^Bowler$/i]);
+        const oversIdx = findHeaderIndex(headers, [/^Overs$/i]);
+        const runsIdx = findHeaderIndex(headers, [/^Runs$/i]);
+        const wicketsIdx = findHeaderIndex(headers, [/^Wickets$/i]);
+
+        for (let x = headerRowIndex + 1; x < rows.length; x++) {
+          const data = rows[x].map(safeText);
+          const textRow = rowText(data);
+
+          if (!textRow) continue;
+          if (/Fall of Wickets/i.test(textRow) || /Batting$/i.test(textRow)) break;
+
+          const name = nameIdx >= 0 ? safeText(data[nameIdx]) : "";
+          if (!name || /^Total$/i.test(name)) continue;
+
+          const overs = oversIdx >= 0 ? oversToDecimal(data[oversIdx]) : 0;
+          const runsConceded = runsIdx >= 0 ? toNumber(data[runsIdx]) : 0;
+          const wickets = wicketsIdx >= 0 ? toNumber(data[wicketsIdx]) : 0;
+          const economy = overs > 0 ? runsConceded / overs : 0;
+          const bowlingAverage = wickets > 0 ? runsConceded / wickets : 0;
+
+          upsertPlayer(name, {
+            team: teamName,
+            opponent,
+            role: wickets > 0 ? "Bowler" : "Player",
+            wickets,
+            economy: Number(economy.toFixed(2)),
+            average: wickets > 0
+              ? Number(bowlingAverage.toFixed(2))
+              : (playersMap.get(safeText(name).toLowerCase())?.average || 0),
+            matchesPlayed: 1
+          });
+        }
+      }
+    }
+
+    return Array.from(playersMap.values()).filter(player => player.name);
+  }
+
+  function parseCSV(text) {
+    const cleanedText = String(text || "").replace(/^\uFEFF/, "");
+    const lines = cleanedText.split(/\r?\n/).filter(line => line.trim());
+    if (!lines.length) return [];
+
+    const looksLikeScorecard =
+      /batting/i.test(cleanedText) &&
+      /bowling/i.test(cleanedText);
+
+    if (looksLikeScorecard) {
+      const scorecardPlayers = parseCricClubsScorecard(cleanedText);
+      if (scorecardPlayers.length) return scorecardPlayers;
+    }
+
+    return parseStandardCSV(lines);
+  }
+
+  function renderAll() {
+    renderMetrics();
+    renderTeamBars();
+    renderOverview();
+    renderPlayerList();
+    renderSelectedPlayer();
+    populateTeams();
+    populatePlayerDropdown();
+  }
+
+  function renderMetrics() {
+    const teamSet = new Set(players.map(p => p.team).filter(Boolean));
+    const totalRuns = players.reduce((sum, p) => sum + toNumber(p.runs), 0);
+    const totalWickets = players.reduce((sum, p) => sum + toNumber(p.wickets), 0);
+    elements.metricPlayers.textContent = players.length;
+    elements.metricTeams.textContent = teamSet.size;
+    elements.metricRuns.textContent = totalRuns;
+    elements.metricWickets.textContent = totalWickets;
+    elements.heroPlayerCount.textContent = players.length;
+    elements.heroTeamCount.textContent = teamSet.size;
+  }
+
+  function renderTeamBars() {
+    if (!players.length) {
+      elements.teamBars.innerHTML = `
+        <div class="bar-row">
+          <span>No teams yet</span>
+          <div class="bar-track"><div class="bar-fill" style="width:0%"></div></div>
+          <strong>0</strong>
+        </div>
+      `;
+      return;
+    }
+
+    const counts = {};
+    players.forEach(player => { counts[player.team] = (counts[player.team] || 0) + 1; });
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const max = entries[0][1] || 1;
+
+    elements.teamBars.innerHTML = entries.map(([team, count]) => `
+      <div class="bar-row">
+        <span>${escapeHtml(team)}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(count / max) * 100}%"></div></div>
+        <strong>${count}</strong>
+      </div>
+    `).join("");
+  }
+
+  function renderOverview() {
+    if (!players.length) {
+      elements.topBatterValue.textContent = "—";
+      elements.topBowlerValue.textContent = "—";
+      elements.avgStrikeRateValue.textContent = "0";
+      elements.rosterHealthValue.textContent = "Empty";
+      elements.overviewEmpty.classList.remove("hidden");
+      return;
+    }
+    const topBatter = [...players].sort((a, b) => b.runs - a.runs)[0];
+    const topBowler = [...players].sort((a, b) => b.wickets - a.wickets)[0];
+    const avgStrikeRate = players.reduce((sum, p) => sum + toNumber(p.strikeRate), 0) / players.length;
+    elements.topBatterValue.textContent = topBatter ? topBatter.name : "—";
+    elements.topBowlerValue.textContent = topBowler ? topBowler.name : "—";
+    elements.avgStrikeRateValue.textContent = avgStrikeRate ? avgStrikeRate.toFixed(1) : "0";
+    elements.rosterHealthValue.textContent = players.length >= 10 ? "Strong" : players.length >= 5 ? "Growing" : "Starting";
+    elements.overviewEmpty.classList.add("hidden");
+  }
+
+  function getFilteredPlayers() {
+    const q = elements.playerSearch.value.trim().toLowerCase();
+    if (!q) return players;
+    return players.filter(player =>
+      player.name.toLowerCase().includes(q) ||
+      player.team.toLowerCase().includes(q) ||
+      player.role.toLowerCase().includes(q) ||
+      (player.opponent || "").toLowerCase().includes(q)
+    );
+  }
+
+  function renderPlayerList() {
+    const filtered = getFilteredPlayers();
+    if (!players.length) {
+      elements.playerList.innerHTML = `
+        <div class="empty-state">
+          <strong>No players uploaded</strong>
+          <p>Use the Uploads tab to import your first roster CSV.</p>
+        </div>
+      `;
+      return;
+    }
+    if (!filtered.length) {
+      elements.playerList.innerHTML = `
+        <div class="empty-state">
+          <strong>No matching players</strong>
+          <p>Try a different search term.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const selected = players[selectedPlayerIndex];
+    elements.playerList.innerHTML = filtered.map(player => `
+      <button class="player-card ${selected && selected.name === player.name && selected.team === player.team ? "active" : ""}" data-name="${escapeAttr(player.name)}" data-team="${escapeAttr(player.team)}">
+        <h4>${escapeHtml(player.name)}</h4>
+        <p>${escapeHtml(player.team)}${player.opponent ? ` vs ${escapeHtml(player.opponent)}` : ""} • ${escapeHtml(player.role)}</p>
+      </button>
+    `).join("");
+
+    document.querySelectorAll(".player-card").forEach(button => {
+      button.addEventListener("click", () => {
+        const name = button.dataset.name;
+        const team = button.dataset.team;
+        selectedPlayerIndex = players.findIndex(player => player.name === name && player.team === team);
+        renderPlayerList();
+        renderSelectedPlayer();
+      });
+    });
+  }
+
+  function renderSelectedPlayer() {
+    if (!players.length || selectedPlayerIndex < 0 || !players[selectedPlayerIndex]) {
+      elements.playerName.textContent = "No player selected";
+      elements.playerMeta.textContent = "Upload a CSV to populate this profile panel.";
+      elements.playerTag.textContent = "Empty state";
+      elements.playerEmpty.classList.remove("hidden");
+      elements.playerDetails.classList.add("hidden");
+      return;
+    }
+
+    const player = players[selectedPlayerIndex];
+    elements.playerName.textContent = player.name;
+    elements.playerMeta.textContent = `${player.team}${player.opponent ? ` vs ${player.opponent}` : ""} • ${player.role}`;
+    elements.playerTag.textContent = `${player.role || "Player"}`;
+    elements.playerEmpty.classList.add("hidden");
+    elements.playerDetails.classList.remove("hidden");
+    elements.detailRuns.textContent = player.runs;
+    elements.detailWickets.textContent = player.wickets;
+    elements.detailStrikeRate.textContent = player.strikeRate;
+    elements.detailAverage.textContent = player.average;
+    elements.detailEconomy.textContent = player.economy;
+    elements.detailCatches.textContent = player.catches;
+    elements.detailTeam.textContent = player.team;
+    elements.detailRole.textContent = `${player.role} • ${player.matchesPlayed || 1} match`;
+  }
+
+  function populateTeams() {
+    if (!elements.teamA || !elements.teamB) return;
+    const teams = [...new Set(players.map(p => p.team).filter(Boolean))];
+    elements.teamA.innerHTML = "";
+    elements.teamB.innerHTML = "";
+    if (!teams.length) {
+      elements.teamA.innerHTML = '<option>No teams loaded</option>';
+      elements.teamB.innerHTML = '<option>No teams loaded</option>';
+      return;
+    }
+    teams.forEach((team, index) => {
+      const optionA = document.createElement("option");
+      optionA.value = team;
+      optionA.textContent = team;
+      if (index === 0) optionA.selected = true;
+      elements.teamA.appendChild(optionA);
+
+      const optionB = document.createElement("option");
+      optionB.value = team;
+      optionB.textContent = team;
+      if (index === 1) optionB.selected = true;
+      elements.teamB.appendChild(optionB);
+    });
+    if (teams.length === 1) elements.teamB.value = teams[0];
+  }
+
+  function populatePlayerDropdown() {
+    if (!elements.playerSelect) return;
+    elements.playerSelect.innerHTML = "";
+    if (!players.length) {
+      elements.playerSelect.innerHTML = '<option>No players loaded</option>';
+      return;
+    }
+    players.forEach(player => {
+      const opt = document.createElement("option");
+      opt.value = player.name;
+      opt.textContent = `${player.name} — ${player.team}`;
+      elements.playerSelect.appendChild(opt);
+    });
+  }
+
+  function getPerMatchRuns(player) {
+    const matches = Math.max(1, toNumber(player.matchesPlayed) || 1);
+    const totalRuns = toNumber(player.runs);
+    const avg = toNumber(player.average);
+    if (avg > 0 && player.wickets === 0) return avg;
+    return totalRuns / matches;
+  }
+
+  function getPerMatchWickets(player) {
+    const matches = Math.max(1, toNumber(player.matchesPlayed) || 1);
+    return toNumber(player.wickets) / matches;
+  }
+
+  function getFormatConfig() {
+    const format = elements.matchFormat?.value || "t20";
+    const configs = {
+      t10: { overs: 10, battingFactor: 0.62, wicketFactor: 0.65, srBase: 145 },
+      t12: { overs: 12, battingFactor: 0.7, wicketFactor: 0.72, srBase: 140 },
+      t20: { overs: 20, battingFactor: 1, wicketFactor: 1, srBase: 130 },
+      t50: { overs: 50, battingFactor: 2.05, wicketFactor: 1.85, srBase: 95 }
+    };
+    return configs[format] || configs.t20;
+  }
+
+  function getPlayerProjection(player) {
+    const role = String(player.role || "").toLowerCase();
+    const format = getFormatConfig();
+    const baseRuns = getPerMatchRuns(player);
+    const baseWickets = getPerMatchWickets(player);
+    const strikeRate = toNumber(player.strikeRate);
+    const economy = toNumber(player.economy);
+    const catches = toNumber(player.catches) / Math.max(1, toNumber(player.matchesPlayed) || 1);
+
+    let projectedRuns = baseRuns * format.battingFactor;
+    if (strikeRate > 0) projectedRuns *= (0.82 + (strikeRate / format.srBase) * 0.18);
+    if (role.includes("bowler") && !role.includes("all")) projectedRuns *= 0.58;
+    if (role.includes("all")) projectedRuns *= 0.9;
+    projectedRuns += catches * 0.4;
+
+    let projectedWickets = baseWickets * format.wicketFactor;
+    if (economy > 0) projectedWickets *= Math.max(0.6, 1 + (7 - economy) * 0.06);
+    if (role.includes("batter") && !role.includes("all")) projectedWickets *= 0.28;
+    if (role.includes("bowler")) projectedWickets *= 1.18;
+
+    projectedRuns = Math.max(0, Math.min(projectedRuns, format.overs === 50 ? 130 : format.overs === 20 ? 90 : 60));
+    projectedWickets = Math.max(0, Math.min(projectedWickets, format.overs === 50 ? 5 : 4));
+
+    return {
+      projectedRuns,
+      projectedWickets,
+      impact: projectedRuns + projectedWickets * 22 + catches * 3
+    };
+  }
+
+  function predictMatch() {
+    const teamA = elements.teamA.value;
+    const teamB = elements.teamB.value;
+    const formatLabel = elements.matchFormat.options[elements.matchFormat.selectedIndex].text;
+    if (!players.length) {
+      elements.predictionResult.innerHTML = '<strong>No data loaded</strong><p>Upload team data first.</p>';
+      return;
+    }
+    if (!teamA || !teamB) {
+      elements.predictionResult.innerHTML = '<strong>Missing team selection</strong><p>Choose two teams first.</p>';
+      return;
+    }
+    if (teamA === teamB) {
+      elements.predictionResult.innerHTML = '<strong>Choose two different teams</strong><p>A team cannot play itself. Even chaos has limits.</p>';
+      return;
+    }
+
+    const teamAPlayers = players.filter(p => p.team === teamA);
+    const teamBPlayers = players.filter(p => p.team === teamB);
+
+    function teamProjection(teamPlayers) {
+      const projections = teamPlayers.map(player => ({ player, proj: getPlayerProjection(player) }));
+      const topSeven = projections.slice().sort((a, b) => b.proj.projectedRuns - a.proj.projectedRuns).slice(0, 7);
+      const topFiveBowlers = projections.slice().sort((a, b) => b.proj.projectedWickets - a.proj.projectedWickets).slice(0, 5);
+      const runs = topSeven.reduce((sum, item) => sum + item.proj.projectedRuns, 0);
+      const wickets = topFiveBowlers.reduce((sum, item) => sum + item.proj.projectedWickets, 0);
+      const strength = projections.reduce((sum, item) => sum + item.proj.impact, 0);
+      return {
+        projectedRuns: Math.round(runs),
+        projectedWickets: Math.max(1, Math.min(10, Math.round(wickets))),
+        strength
       };
     }
 
-    function getRoleScore(player) {
-      const projection = getPlayerProjection(player);
-      return Math.max(projection.impact, 0);
-    }
+    const teamAProj = teamProjection(teamAPlayers);
+    const teamBProj = teamProjection(teamBPlayers);
+    const totalStrength = Math.max(teamAProj.strength + teamBProj.strength, 1);
+    const probA = (teamAProj.strength / totalStrength) * 100;
+    const probB = (teamBProj.strength / totalStrength) * 100;
+    const winner = probA >= probB ? teamA : teamB;
+    const stronger = probA >= probB ? probA : probB;
+    const fillWidth = Math.max(8, Math.min(probA, 92));
 
-    function predictMatch() {
-      const teamA = elements.teamA.value;
-      const teamB = elements.teamB.value;
-      const formatLabel = elements.matchFormat.options[elements.matchFormat.selectedIndex].text;
-      if (!players.length) {
-        elements.predictionResult.innerHTML = '<strong>No data loaded</strong><p>Upload team data first.</p>';
-        return;
-      }
-      if (!teamA || !teamB) {
-        elements.predictionResult.innerHTML = '<strong>Missing team selection</strong><p>Choose two teams first.</p>';
-        return;
-      }
-      if (teamA === teamB) {
-        elements.predictionResult.innerHTML = '<strong>Choose two different teams</strong><p>A team cannot play itself. Even chaos has limits.</p>';
-        return;
-      }
-
-      const teamAPlayers = players.filter(p => p.team === teamA);
-      const teamBPlayers = players.filter(p => p.team === teamB);
-
-      function teamProjection(teamPlayers) {
-        const projections = teamPlayers.map(player => ({ player, proj: getPlayerProjection(player) }));
-        const topSeven = projections.slice().sort((a, b) => b.proj.projectedRuns - a.proj.projectedRuns).slice(0, 7);
-        const topFiveBowlers = projections.slice().sort((a, b) => b.proj.projectedWickets - a.proj.projectedWickets).slice(0, 5);
-        const runs = topSeven.reduce((sum, item) => sum + item.proj.projectedRuns, 0);
-        const wickets = topFiveBowlers.reduce((sum, item) => sum + item.proj.projectedWickets, 0);
-        const strength = projections.reduce((sum, item) => sum + item.proj.impact, 0);
-        return {
-          projectedRuns: Math.round(runs),
-          projectedWickets: Math.max(1, Math.min(10, Math.round(wickets))),
-          strength
-        };
-      }
-
-      const teamAProj = teamProjection(teamAPlayers);
-      const teamBProj = teamProjection(teamBPlayers);
-      const totalStrength = Math.max(teamAProj.strength + teamBProj.strength, 1);
-      const probA = (teamAProj.strength / totalStrength) * 100;
-      const probB = (teamBProj.strength / totalStrength) * 100;
-      const winner = probA >= probB ? teamA : teamB;
-      const stronger = probA >= probB ? probA : probB;
-      const fillWidth = Math.max(8, Math.min(probA, 92));
-
-      elements.predictionResult.innerHTML = `
-        <strong>${escapeHtml(winner)} likely to win 🏆</strong>
-        <p>${formatLabel} projection based on per-match player output rather than raw season totals.</p>
-        <div class="duel">
-          <div class="duel-card">
-            <div class="label">${escapeHtml(teamA)}</div>
-            <div class="value big-value">${probA.toFixed(1)}%</div>
-          </div>
-          <div class="vs">VS</div>
-          <div class="duel-card">
-            <div class="label">${escapeHtml(teamB)}</div>
-            <div class="value big-value">${probB.toFixed(1)}%</div>
-          </div>
+    elements.predictionResult.innerHTML = `
+      <strong>${escapeHtml(winner)} likely to win 🏆</strong>
+      <p>${formatLabel} projection based on per-match player output rather than raw season totals.</p>
+      <div class="duel">
+        <div class="duel-card">
+          <div class="label">${escapeHtml(teamA)}</div>
+          <div class="value big-value">${probA.toFixed(1)}%</div>
         </div>
-        <div class="probability-bar"><div class="probability-fill" style="width:${fillWidth}%"></div></div>
-        <div class="score-strip">
-          <div class="score-box"><div class="k">${escapeHtml(teamA)} Score</div><div class="v">${teamAProj.projectedRuns}/${teamAProj.projectedWickets}</div></div>
-          <div class="score-box"><div class="k">${escapeHtml(teamB)} Score</div><div class="v">${teamBProj.projectedRuns}/${teamBProj.projectedWickets}</div></div>
-          <div class="score-box"><div class="k">Confidence</div><div class="v">${stronger.toFixed(1)}%</div></div>
+        <div class="vs">VS</div>
+        <div class="duel-card">
+          <div class="label">${escapeHtml(teamB)}</div>
+          <div class="value big-value">${probB.toFixed(1)}%</div>
         </div>
-      `;
+      </div>
+      <div class="probability-bar"><div class="probability-fill" style="width:${fillWidth}%"></div></div>
+      <div class="score-strip">
+        <div class="score-box"><div class="k">${escapeHtml(teamA)} Score</div><div class="v">${teamAProj.projectedRuns}/${teamAProj.projectedWickets}</div></div>
+        <div class="score-box"><div class="k">${escapeHtml(teamB)} Score</div><div class="v">${teamBProj.projectedRuns}/${teamBProj.projectedWickets}</div></div>
+        <div class="score-box"><div class="k">Confidence</div><div class="v">${stronger.toFixed(1)}%</div></div>
+      </div>
+    `;
+  }
+
+  function predictPlayer() {
+    const selectedName = elements.playerSelect.value;
+    const formatLabel = elements.matchFormat.options[elements.matchFormat.selectedIndex].text;
+    const player = players.find(p => p.name === selectedName || `${p.name} — ${p.team}` === selectedName);
+    if (!player) {
+      elements.playerPredictionResult.innerHTML = '<strong>No player selected</strong><p>Choose a player first.</p>';
+      return;
     }
 
-    function predictPlayer() {
-      const selectedName = elements.playerSelect.value;
-      const formatLabel = elements.matchFormat.options[elements.matchFormat.selectedIndex].text;
-      const player = players.find(p => p.name === selectedName || `${p.name} — ${p.team}` === selectedName);
-      if (!player) {
-        elements.playerPredictionResult.innerHTML = '<strong>No player selected</strong><p>Choose a player first.</p>';
-        return;
-      }
+    const projection = getPlayerProjection(player);
+    const impactBand = projection.impact >= 95 ? "Elite" : projection.impact >= 65 ? "High" : projection.impact >= 35 ? "Steady" : "Developing";
+    const baseRuns = getPerMatchRuns(player);
+    const baseWickets = getPerMatchWickets(player);
 
-      const projection = getPlayerProjection(player);
-      const impactBand = projection.impact >= 95 ? 'Elite' : projection.impact >= 65 ? 'High' : projection.impact >= 35 ? 'Steady' : 'Developing';
-      const baseRuns = getPerMatchRuns(player);
-      const baseWickets = getPerMatchWickets(player);
+    elements.playerPredictionResult.innerHTML = `
+      <strong>${escapeHtml(player.name)} next match forecast</strong>
+      <p>${escapeHtml(player.team)} • ${escapeHtml(player.role)} • ${formatLabel} projection from per-match output.</p>
+      <div class="score-strip">
+        <div class="score-box"><div class="k">Pred. Runs</div><div class="v">${projection.projectedRuns.toFixed(0)}</div></div>
+        <div class="score-box"><div class="k">Pred. Wickets</div><div class="v">${projection.projectedWickets.toFixed(1)}</div></div>
+        <div class="score-box"><div class="k">Impact Tier</div><div class="v">${impactBand}</div></div>
+      </div>
+      <div class="helper" style="margin-top:12px;">
+        Base per-match profile: ${baseRuns.toFixed(1)} runs and ${baseWickets.toFixed(1)} wickets. This prediction scales that baseline to the selected format instead of using raw tournament totals.
+      </div>
+    `;
+  }
 
-      elements.playerPredictionResult.innerHTML = `
-        <strong>${escapeHtml(player.name)} next match forecast</strong>
-        <p>${escapeHtml(player.team)} • ${escapeHtml(player.role)} • ${formatLabel} projection from per-match output.</p>
-        <div class="score-strip">
-          <div class="score-box"><div class="k">Pred. Runs</div><div class="v">${projection.projectedRuns.toFixed(0)}</div></div>
-          <div class="score-box"><div class="k">Pred. Wickets</div><div class="v">${projection.projectedWickets.toFixed(1)}</div></div>
-          <div class="score-box"><div class="k">Impact Tier</div><div class="v">${impactBand}</div></div>
-        </div>
-        <div class="helper" style="margin-top:12px;">
-          Base per-match profile: ${baseRuns.toFixed(1)} runs and ${baseWickets.toFixed(1)} wickets. This prediction scales that baseline to the selected format instead of using raw tournament totals.
-        </div>
-      `;
+  function processCSVText(csvText, sourceLabel = "CSV source") {
+    const parsed = parseCSV(String(csvText || ""));
+    if (!parsed.length) {
+      elements.uploadStatus.textContent = "Could not find valid player rows in that CSV. Double-check your file format.";
+      return false;
     }
-
-    function processCSVText(csvText, sourceLabel = "CSV source") {
-      const parsed = parseCSV(String(csvText || ""));
-      if (!parsed.length) {
-        elements.uploadStatus.textContent = "Could not find valid player rows in that CSV. Double-check your headers.";
-        return false;
-      }
-      players = parsed;
-      selectedPlayerIndex = 0;
-      savePlayers();
-      renderAll();
-      elements.uploadStatus.textContent = `Loaded ${players.length} players successfully from ${sourceLabel}.`;
-      switchTab("playersTab");
-      return true;
-    }
-
-    function handleCSVFile(file) {
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          processCSVText(reader.result || "", file.name);
-        } catch {
-          elements.uploadStatus.textContent = "That CSV could not be processed. Please check the format and try again.";
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    async function fetchCSVFromUrl() {
-      const url = elements.csvUrlInput.value.trim();
-      if (!url) {
-        elements.uploadStatus.textContent = "Paste a public CricClubs CSV link first.";
-        return;
-      }
-
-      elements.fetchCsvBtn.disabled = true;
-      elements.fetchCsvBtn.textContent = "Fetching...";
-      elements.uploadStatus.textContent = "Trying to fetch the CricClubs CSV link...";
-
-      try {
-        const response = await fetch(url, {
-          method: "GET",
-          mode: "cors",
-          cache: "no-store"
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const text = await response.text();
-        const ok = processCSVText(text, url);
-        if (!ok) {
-          elements.uploadStatus.textContent = "The link loaded, but the CSV columns were not recognized.";
-        }
-      } catch (error) {
-        elements.uploadStatus.textContent = "This link could not be fetched directly. CricClubs may be blocking browser access or CORS. Download the CSV manually and upload it here instead.";
-      } finally {
-        elements.fetchCsvBtn.disabled = false;
-        elements.fetchCsvBtn.textContent = "Fetch CricClubs CSV Link";
-      }
-    }
-
-    function downloadTemplate() {
-      const template = [
-        "name,team,role,runs,wickets,strikeRate,average,economy,catches,matchesPlayed",
-        "John Smith,Albany Strikers,All-Rounder,120,8,132.4,30,6.2,3,6",
-        "Rahul Patel,Capital Chargers,Batter,178,1,140.1,35.6,0,4,7",
-        "Ayan Das,Troy Titans,Bowler,38,12,101.3,14.8,5.4,2,8"
-      ].join("\n");
-      const blob = new Blob([template], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "ny-ovals-iq-template.csv";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    }
-
-    function loadSampleData() {
-      players = [
-        { name: "Arjun Patel", team: "Albany Strikers", role: "All-Rounder", runs: 120, wickets: 6, strikeRate: 132.4, average: 30, economy: 6.2, catches: 3, matchesPlayed: 6 },
-        { name: "Rohan Singh", team: "Capital Chargers", role: "Batter", runs: 178, wickets: 0, strikeRate: 141.8, average: 44.5, economy: 0, catches: 4, matchesPlayed: 7 },
-        { name: "Sameer Khan", team: "Albany Strikers", role: "Bowler", runs: 36, wickets: 11, strikeRate: 108.1, average: 12, economy: 5.7, catches: 2, matchesPlayed: 8 },
-        { name: "Dev Malhotra", team: "Capital Chargers", role: "Bowler", runs: 29, wickets: 10, strikeRate: 96.4, average: 9.8, economy: 5.2, catches: 1, matchesPlayed: 8 },
-      ];
-      selectedPlayerIndex = 0;
-      savePlayers();
-      renderAll();
-      elements.uploadStatus.textContent = "Loaded a small sample dataset so you can test the platform layout.";
-    }
-
-    function clearData() {
-      players = [];
-      selectedPlayerIndex = -1;
-      savePlayers();
-      renderAll();
-      elements.uploadStatus.textContent = "All stored platform data has been cleared.";
-      elements.predictionResult.innerHTML = '<strong>No prediction yet</strong><p>Select two teams and click predict.</p>';
-      elements.playerPredictionResult.innerHTML = '<strong>No prediction yet</strong><p>Select a player to estimate next match output.</p>';
-    }
-
-    function escapeHtml(value) {
-      return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-    function escapeAttr(value) { return escapeHtml(value); }
-
-    function switchTab(targetId) {
-      document.querySelectorAll(".tab-btn").forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.tab === targetId);
-      });
-      document.querySelectorAll(".tab-panel").forEach(panel => {
-        panel.classList.toggle("active", panel.id === targetId);
-      });
-    }
-
-    document.querySelectorAll(".tab-btn").forEach(btn => {
-      btn.addEventListener("click", () => switchTab(btn.dataset.tab));
-    });
-
-    elements.playerSearch.addEventListener("input", renderPlayerList);
-    elements.chooseFileBtn.addEventListener("click", () => elements.csvFileInput.click());
-    elements.csvFileInput.addEventListener("change", event => handleCSVFile(event.target.files[0]));
-    elements.downloadTemplateBtn.addEventListener("click", downloadTemplate);
-    elements.fetchCsvBtn.addEventListener("click", fetchCSVFromUrl);
-    elements.loadSampleBtn.addEventListener("click", loadSampleData);
-    elements.clearDataBtn.addEventListener("click", clearData);
-    elements.openUploadsBtn.addEventListener("click", () => switchTab("uploads"));
-    elements.predictBtn.addEventListener("click", predictMatch);
-    elements.predictPlayerBtn.addEventListener("click", predictPlayer);
-    elements.matchFormat.addEventListener("change", () => {
-      if (players.length) {
-        if (!elements.predictionResult.textContent.includes('No prediction yet')) predictMatch();
-        if (!elements.playerPredictionResult.textContent.includes('No prediction yet')) predictPlayer();
-      }
-    });
-
-    const dropZone = document.getElementById("dropZone");
-    ["dragenter", "dragover"].forEach(eventName => {
-      dropZone.addEventListener(eventName, e => {
-        e.preventDefault();
-        dropZone.style.borderColor = "rgba(249,115,22,0.6)";
-        dropZone.style.background = "rgba(249,115,22,0.08)";
-      });
-    });
-    ["dragleave", "drop"].forEach(eventName => {
-      dropZone.addEventListener(eventName, e => {
-        e.preventDefault();
-        dropZone.style.borderColor = "rgba(255,255,255,0.18)";
-        dropZone.style.background = "rgba(15,23,42,0.34)";
-      });
-    });
-    dropZone.addEventListener("drop", e => {
-      const file = e.dataTransfer.files[0];
-      if (file) handleCSVFile(file);
-    });
-
-    elements.contactForm.addEventListener("submit", e => {
-      e.preventDefault();
-      const name = document.getElementById("contactName").value.trim();
-      const org = document.getElementById("contactOrg").value.trim();
-      const email = document.getElementById("contactEmail").value.trim();
-      const phone = document.getElementById("contactPhone").value.trim();
-      const message = document.getElementById("contactMessage").value.trim();
-      const subject = encodeURIComponent(`NY Ovals IQ Inquiry from ${name}`);
-      const body = encodeURIComponent(`Name: ${name}\nOrganization: ${org}\nEmail: ${email}\nPhone: ${phone}\n\nMessage:\n${message}`);
-      window.location.href = `mailto:aniketdixit2010@gmail.com?subject=${subject}&body=${body}`;
-    });
-
+    players = parsed;
+    selectedPlayerIndex = 0;
+    savePlayers();
     renderAll();
+    elements.uploadStatus.textContent = `Loaded ${players.length} players successfully from ${sourceLabel}.`;
+    switchTab("playersTab");
+    return true;
+  }
+
+  function handleCSVFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        processCSVText(reader.result || "", file.name);
+      } catch (error) {
+        console.error(error);
+        elements.uploadStatus.textContent = "That CSV could not be processed. Please check the format and try again.";
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  async function fetchCSVFromUrl() {
+    const url = elements.csvUrlInput.value.trim();
+    if (!url) {
+      elements.uploadStatus.textContent = "Paste a public CricClubs CSV link first.";
+      return;
+    }
+
+    elements.fetchCsvBtn.disabled = true;
+    elements.fetchCsvBtn.textContent = "Fetching...";
+    elements.uploadStatus.textContent = "Trying to fetch the CricClubs CSV link...";
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        mode: "cors",
+        cache: "no-store"
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const text = await response.text();
+      const ok = processCSVText(text, url);
+      if (!ok) {
+        elements.uploadStatus.textContent = "The link loaded, but the CSV columns were not recognized.";
+      }
+    } catch (error) {
+      elements.uploadStatus.textContent = "This link could not be fetched directly. CricClubs may be blocking browser access or CORS. Download the file and upload it manually instead.";
+    } finally {
+      elements.fetchCsvBtn.disabled = false;
+      elements.fetchCsvBtn.textContent = "Fetch CricClubs CSV Link";
+    }
+  }
+
+  function downloadTemplate() {
+    const template = [
+      "name,team,opponent,role,runs,wickets,strikeRate,average,economy,catches,matchesPlayed",
+      "John Smith,Albany Strikers,Capital Chargers,All-Rounder,120,8,132.4,30,6.2,3,6",
+      "Rahul Patel,Capital Chargers,Albany Strikers,Batter,178,1,140.1,35.6,0,4,7",
+      "Ayan Das,Troy Titans,Albany Strikers,Bowler,38,12,101.3,14.8,5.4,2,8"
+    ].join("\n");
+
+    const blob = new Blob([template], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "ny-ovals-iq-template.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function loadSampleData() {
+    players = [
+      { name: "Arjun Patel", team: "Albany Strikers", opponent: "Capital Chargers", role: "All-Rounder", runs: 120, wickets: 6, strikeRate: 132.4, average: 30, economy: 6.2, catches: 3, matchesPlayed: 6 },
+      { name: "Rohan Singh", team: "Capital Chargers", opponent: "Albany Strikers", role: "Batter", runs: 178, wickets: 0, strikeRate: 141.8, average: 44.5, economy: 0, catches: 4, matchesPlayed: 7 },
+      { name: "Sameer Khan", team: "Albany Strikers", opponent: "Capital Chargers", role: "Bowler", runs: 36, wickets: 11, strikeRate: 108.1, average: 12, economy: 5.7, catches: 2, matchesPlayed: 8 },
+      { name: "Dev Malhotra", team: "Capital Chargers", opponent: "Albany Strikers", role: "Bowler", runs: 29, wickets: 10, strikeRate: 96.4, average: 9.8, economy: 5.2, catches: 1, matchesPlayed: 8 }
+    ];
+    selectedPlayerIndex = 0;
+    savePlayers();
+    renderAll();
+    elements.uploadStatus.textContent = "Loaded a small sample dataset so you can test the platform layout.";
+  }
+
+  function clearData() {
+    players = [];
+    selectedPlayerIndex = -1;
+    savePlayers();
+    renderAll();
+    elements.uploadStatus.textContent = "All stored platform data has been cleared.";
+    elements.predictionResult.innerHTML = '<strong>No prediction yet</strong><p>Select two teams and click predict.</p>';
+    elements.playerPredictionResult.innerHTML = '<strong>No prediction yet</strong><p>Select a player to estimate next match output.</p>';
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value);
+  }
+
+  function switchTab(targetId) {
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.tab === targetId);
+    });
+    document.querySelectorAll(".tab-panel").forEach(panel => {
+      panel.classList.toggle("active", panel.id === targetId);
+    });
+  }
+
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+  });
+
+  elements.playerSearch.addEventListener("input", renderPlayerList);
+  elements.chooseFileBtn.addEventListener("click", () => elements.csvFileInput.click());
+  elements.csvFileInput.addEventListener("change", event => handleCSVFile(event.target.files[0]));
+  elements.downloadTemplateBtn.addEventListener("click", downloadTemplate);
+  elements.fetchCsvBtn.addEventListener("click", fetchCSVFromUrl);
+  elements.loadSampleBtn.addEventListener("click", loadSampleData);
+  elements.clearDataBtn.addEventListener("click", clearData);
+  elements.openUploadsBtn.addEventListener("click", () => switchTab("uploads"));
+  elements.predictBtn.addEventListener("click", predictMatch);
+  elements.predictPlayerBtn.addEventListener("click", predictPlayer);
+
+  elements.matchFormat.addEventListener("change", () => {
+    if (players.length) {
+      if (!elements.predictionResult.textContent.includes("No prediction yet")) predictMatch();
+      if (!elements.playerPredictionResult.textContent.includes("No prediction yet")) predictPlayer();
+    }
+  });
+
+  const dropZone = document.getElementById("dropZone");
+  ["dragenter", "dragover"].forEach(eventName => {
+    dropZone.addEventListener(eventName, e => {
+      e.preventDefault();
+      dropZone.style.borderColor = "rgba(249,115,22,0.6)";
+      dropZone.style.background = "rgba(249,115,22,0.08)";
+    });
+  });
+
+  ["dragleave", "drop"].forEach(eventName => {
+    dropZone.addEventListener(eventName, e => {
+      e.preventDefault();
+      dropZone.style.borderColor = "rgba(255,255,255,0.18)";
+      dropZone.style.background = "rgba(15,23,42,0.34)";
+    });
+  });
+
+  dropZone.addEventListener("drop", e => {
+    const file = e.dataTransfer.files[0];
+    if (file) handleCSVFile(file);
+  });
+
+  elements.contactForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const name = document.getElementById("contactName").value.trim();
+    const org = document.getElementById("contactOrg").value.trim();
+    const email = document.getElementById("contactEmail").value.trim();
+    const phone = document.getElementById("contactPhone").value.trim();
+    const message = document.getElementById("contactMessage").value.trim();
+    const subject = encodeURIComponent(`NY Ovals IQ Inquiry from ${name}`);
+    const body = encodeURIComponent(`Name: ${name}\nOrganization: ${org}\nEmail: ${email}\nPhone: ${phone}\n\nMessage:\n${message}`);
+    window.location.href = `mailto:aniketdixit2010@gmail.com?subject=${subject}&body=${body}`;
+  });
+
+  renderAll();
   </script>
 </body>
 </html>
