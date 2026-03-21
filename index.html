@@ -282,6 +282,27 @@
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
+    .list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .list-rank {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: rgba(249,115,22,0.18);
+      color: #fdba74;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
     .stack { display: grid; gap: 14px; }
 
     .upload-box {
@@ -733,7 +754,7 @@
           <div class="dashboard-grid">
             <div class="card panel-pad" id="uploadsCard">
               <div class="panel-title">Upload player data</div>
-              <p class="panel-subtitle">Accepted columns: name, team, opponent, role, runs, wickets, strikeRate, average, economy, catches, matchesPlayed</p>
+              <p class="panel-subtitle">Accepted columns: name, team, role, runs, wickets, strikeRate, average, economy, catches, matchesPlayed, matchesPlayed</p>
 
               <div class="upload-box" style="margin-top:18px;" id="dropZone">
                 <div class="upload-icon">⬆️</div>
@@ -927,213 +948,15 @@
     }
 
     function toNumber(value) {
-      const cleaned = String(value ?? "").trim().replace(/,/g, "");
-  if (!cleaned) return 0;
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function safeText(value) {
-  return String(value ?? "").trim();
+      const n = Number(String(value || "").trim());
+      return Number.isFinite(n) ? n : 0;
     }
 
-    function normalizeHeader(header) {
-      return String(header || "")
-        .replace(/^\uFEFF/, "")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "")
-        .replace(/[^a-z0-9_]/g, "");
-    }
-
-    function splitCSVLine(line) {
-  const result = [];
-  let current = "";
-  let insideQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-
-    if (char === '"') {
-      if (insideQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        insideQuotes = !insideQuotes;
-      }
-    } else if ((char === "," || char === "\t") && !insideQuotes) {
-      result.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
-  function cleanTeamName(value) {
-  return safeText(value)
-    .replace(/^,+/, "")
-    .replace(/\s+Batting$/i, "")
-    .replace(/\s+Bowling$/i, "")
-    .trim();
-}
-
-function inferOpponentTeam(lines, currentTeam) {
-  for (const line of lines) {
-    if (/\bvs\b/i.test(line)) {
-      const cleaned = safeText(line).replace(/\s+/g, " ");
-      const parts = cleaned.split(/\bvs\b/i).map(s => s.trim()).filter(Boolean);
-
-      if (parts.length === 2) {
-        if (parts[0].toLowerCase().includes(currentTeam.toLowerCase())) return parts[1];
-        if (parts[1].toLowerCase().includes(currentTeam.toLowerCase())) return parts[0];
-      }
-    }
-  }
-  return "Opponent";
-}
-
-function parseCricClubsScorecard(text) {
-  const lines = text.split(/\r?\n/).map(line => line.trimEnd());
-  const playersMap = new Map();
-
-  function upsertPlayer(name, updates) {
-    const key = safeText(name).toLowerCase();
-    if (!key) return;
-
-    const existing = playersMap.get(key) || {
-      name: safeText(name),
-      team: updates.team || "Unassigned",
-      opponent: updates.opponent || "Opponent",
-      role: "Player",
-      runs: 0,
-      wickets: 0,
-      strikeRate: 0,
-      average: 0,
-      economy: 0,
-      catches: 0,
-      matchesPlayed: 1,
-    };
-
-    const merged = { ...existing, ...updates };
-
-    if (merged.runs > 0 && merged.wickets > 0) merged.role = "All-Rounder";
-    else if (merged.wickets > 0) merged.role = "Bowler";
-    else if (merged.runs > 0) merged.role = "Batter";
-
-    playersMap.set(key, merged);
-  }
-
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i].trim();
-
-    if (!line) {
-      i++;
-      continue;
-    }
-
-    if (/Batting$/i.test(line)) {
-      const battingTeam = cleanTeamName(line);
-      const opponent = inferOpponentTeam(lines, battingTeam);
-
-      i++;
-      while (i < lines.length && !/BatsMan|Batsman/i.test(lines[i])) i++;
-      i++;
-
-      while (i < lines.length) {
-        const row = lines[i].trim();
-        if (!row) {
-          i++;
-          continue;
-        }
-
-        if (/Bowling$/i.test(row) || /Fall of Wickets/i.test(row) || /Byes:/i.test(row)) break;
-
-        const parts = splitCSVLine(row).map(safeText);
-
-        if (parts.length >= 8) {
-          const name = parts[0];
-          const runs = toNumber(parts[4]);
-          const balls = toNumber(parts[5]);
-          const strikeRate = balls > 0 ? (runs / balls) * 100 : 0;
-
-          upsertPlayer(name, {
-            team: battingTeam,
-            opponent,
-            role: "Batter",
-            runs,
-            strikeRate: Number(strikeRate.toFixed(1)),
-            average: runs,
-            matchesPlayed: 1,
-          });
-        }
-
-        i++;
-      }
-
-      continue;
-    }
-
-    if (/Bowling$/i.test(line)) {
-      const bowlingTeam = cleanTeamName(line);
-      const opponent = inferOpponentTeam(lines, bowlingTeam);
-
-      i++;
-      while (i < lines.length && !/^\s*Bowler/i.test(lines[i])) i++;
-      i++;
-
-      while (i < lines.length) {
-        const row = lines[i].trim();
-
-        if (!row) {
-          i++;
-          continue;
-        }
-
-        if (/^Total/i.test(row) || /Fall of Wickets/i.test(row) || /Batting$/i.test(row)) break;
-
-        const parts = splitCSVLine(row).map(safeText);
-
-        if (parts.length >= 5) {
-          const name = parts[0];
-          const overs = toNumber(parts[1]);
-          const runsConceded = toNumber(parts[3]);
-          const wickets = toNumber(parts[4]);
-          const economy = overs > 0 ? runsConceded / overs : 0;
-          const bowlingAverage = wickets > 0 ? runsConceded / wickets : 0;
-
-          upsertPlayer(name, {
-            team: bowlingTeam,
-            opponent,
-            role: wickets > 0 ? "Bowler" : "Player",
-            wickets,
-            economy: Number(economy.toFixed(2)),
-            average: wickets > 0
-              ? Number(bowlingAverage.toFixed(2))
-              : (playersMap.get(safeText(name).toLowerCase())?.average || 0),
-            matchesPlayed: 1,
-          });
-        }
-
-        i++;
-      }
-
-      continue;
-    }
-
-    i++;
-  }
-
-  return Array.from(playersMap.values()).filter(player => player.name);
-}
-
-  result.push(current);
-  return result;
-}
-
-    function parseStandardCSV(lines) {
+    function parseCSV(text) {
+      const cleanedText = text.replace(/^\uFEFF/, "");
+      const lines = cleanedText.trim().split(/\r?\n/).filter(Boolean);
       if (!lines.length) return [];
       const headers = splitCSVLine(lines[0]).map(h => normalizeHeader(h));
-
       return lines.slice(1).map(line => {
         const values = splitCSVLine(line);
         const row = {};
@@ -1161,115 +984,37 @@ function parseCricClubsScorecard(text) {
       }).filter(player => player.name);
     }
 
-    function parseCricClubsScorecard(lines) {
-      const players = [];
-      let detectedTeam = "Imported Team";
-
-      const teamLine = lines.find(line =>
-        /vs|v\.|match/i.test(line) && !/batting|bowling/i.test(line)
-      );
-      if (teamLine) {
-        const cleaned = teamLine.replace(/\t/g, " ").trim();
-        if (cleaned) detectedTeam = cleaned;
-      }
-
-      const battingIndex = lines.findIndex(line => /batting/i.test(line));
-      if (battingIndex === -1) return [];
-
-      for (let i = battingIndex + 1; i < lines.length; i++) {
-        const rawLine = lines[i].trim();
-        if (!rawLine) continue;
-
-        if (/bowling|fall of wickets|extras|did not bat|yet to bat/i.test(rawLine)) {
-          break;
-        }
-
-        const parts = splitCSVLine(rawLine).map(p => p.trim()).filter(Boolean);
-        if (!parts.length) continue;
-
-        const joined = parts.join(" ").toLowerCase();
-        if (/batsman|batter|player name|r\s+b\s+4s\s+6s|dismissal/i.test(joined)) continue;
-
-        const name = parts[0] || "";
-        if (!name || name.length < 2) continue;
-
-        const numericParts = parts.map(p => toNumber(p));
-        const possibleRuns = numericParts.filter(n => n >= 0);
-        let runs = 0;
-
-        if (possibleRuns.length) {
-          runs = possibleRuns[0];
-          if (parts.length >= 5 && toNumber(parts[parts.length - 4]) >= 0) {
-            runs = toNumber(parts[parts.length - 4]);
-          } else if (parts.length >= 4 && toNumber(parts[parts.length - 3]) >= 0) {
-            runs = toNumber(parts[parts.length - 3]);
-          }
-        }
-
-        players.push({
-          name,
-          team: detectedTeam,
-          role: "Batter",
-          runs,
-          wickets: 0,
-          strikeRate: 0,
-          average: runs,
-          economy: 0,
-          catches: 0,
-          matchesPlayed: 1
-        });
-      }
-
-      return players;
+    function normalizeHeader(header) {
+      return String(header || "")
+        .replace(/^\uFEFF/, "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "")
+        .replace(/[^a-z0-9_]/g, "");
     }
 
-  function parseCSV(text) {
-  const cleanedText = text.replace(/^\uFEFF/, "");
-  const lines = cleanedText.trim().split(/\r?\n/).filter(Boolean);
-  if (!lines.length) return [];
-
-  const looksLikeScorecard =
-    /Batting/i.test(cleanedText) &&
-    /Bowling/i.test(cleanedText);
-
-  if (looksLikeScorecard) {
-    const scorecardPlayers = parseCricClubsScorecard(cleanedText);
-    if (scorecardPlayers.length) return scorecardPlayers;
-  }
-
-  const headers = splitCSVLine(lines[0]).map(h => normalizeHeader(h));
-
-  return lines.slice(1).map(line => {
-    const values = splitCSVLine(line);
-    const row = {};
-
-    headers.forEach((header, index) => {
-      row[header] = safeText(values[index] || "");
-    });
-
-    const playerName = row.name || row.playername || row.player || row.fullname || row.full_name || row.player_name;
-    const playerTeam = row.team || row.club || row.squad;
-    const playerOpponent = row.opponent || row.vs || row.against;
-    const playerRole = row.role || row.type || row.position;
-    const playerMatches = toNumber(row.matchesplayed || row.matches || row.matchplayed || row.innings || row.games);
-
-    return {
-      name: playerName || "Unnamed Player",
-      team: playerTeam || "Unassigned",
-      opponent: playerOpponent || "Opponent",
-      role: playerRole || "Player",
-      runs: toNumber(row.runs),
-      wickets: toNumber(row.wickets),
-      strikeRate: toNumber(row.strikerate || row.strike_rate),
-      average: toNumber(row.average || row.avg),
-      economy: toNumber(row.economy || row.econ),
-      catches: toNumber(row.catches || row.catch),
-      matchesPlayed: Math.max(1, playerMatches || 1),
-    };
-  }).filter(player => player.name);
-}
-
-      return parseStandardCSV(lines);
+    function splitCSVLine(line) {
+      const result = [];
+      let current = "";
+      let insideQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (insideQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            insideQuotes = !insideQuotes;
+          }
+        } else if (char === ',' && !insideQuotes) {
+          result.push(current);
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
     }
 
     function renderAll() {
@@ -1401,7 +1146,7 @@ function parseCricClubsScorecard(text) {
 
       const player = players[selectedPlayerIndex];
       elements.playerName.textContent = player.name;
-      elements.playerMeta.textContent = `${player.team} vs ${player.opponent || "Opponent"} • ${player.role}`;
+      elements.playerMeta.textContent = `${player.team} • ${player.role}`;
       elements.playerTag.textContent = `${player.role || "Player"}`;
       elements.playerEmpty.classList.add("hidden");
       elements.playerDetails.classList.remove("hidden");
@@ -1510,6 +1255,11 @@ function parseCricClubsScorecard(text) {
       };
     }
 
+    function getRoleScore(player) {
+      const projection = getPlayerProjection(player);
+      return Math.max(projection.impact, 0);
+    }
+
     function predictMatch() {
       const teamA = elements.teamA.value;
       const teamB = elements.teamB.value;
@@ -1607,7 +1357,7 @@ function parseCricClubsScorecard(text) {
     function processCSVText(csvText, sourceLabel = "CSV source") {
       const parsed = parseCSV(String(csvText || ""));
       if (!parsed.length) {
-        elements.uploadStatus.textContent = "Could not find valid player rows in that CSV. Double-check your headers or CricClubs export format.";
+        elements.uploadStatus.textContent = "Could not find valid player rows in that CSV. Double-check your headers.";
         return false;
       }
       players = parsed;
@@ -1713,7 +1463,7 @@ function parseCricClubsScorecard(text) {
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
+        .replace(/\"/g, "&quot;")
         .replace(/'/g, "&#039;");
     }
     function escapeAttr(value) { return escapeHtml(value); }
@@ -1743,8 +1493,8 @@ function parseCricClubsScorecard(text) {
     elements.predictPlayerBtn.addEventListener("click", predictPlayer);
     elements.matchFormat.addEventListener("change", () => {
       if (players.length) {
-        if (!elements.predictionResult.textContent.includes("No prediction yet")) predictMatch();
-        if (!elements.playerPredictionResult.textContent.includes("No prediction yet")) predictPlayer();
+        if (!elements.predictionResult.textContent.includes('No prediction yet')) predictMatch();
+        if (!elements.playerPredictionResult.textContent.includes('No prediction yet')) predictPlayer();
       }
     });
 
