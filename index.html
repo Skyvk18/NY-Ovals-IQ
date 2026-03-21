@@ -1377,7 +1377,7 @@
 
     const player = players[selectedPlayerIndex];
     elements.playerName.textContent = player.name;
-    elements.playerMeta.textContent = `${player.team}${player.opponent ? ` vs ${player.opponent}` : ""} • ${player.role}`;
+    elements.playerMeta.textContent = `${player.team} • ${player.role}`;
     elements.playerTag.textContent = `${player.role || "Player"}`;
     elements.playerEmpty.classList.add("hidden");
     elements.playerDetails.classList.remove("hidden");
