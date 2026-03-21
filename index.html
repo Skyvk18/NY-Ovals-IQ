@@ -282,27 +282,6 @@
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
-    .list-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 16px;
-      border-radius: 20px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-    .list-rank {
-      width: 38px;
-      height: 38px;
-      display: grid;
-      place-items: center;
-      border-radius: 999px;
-      background: rgba(249,115,22,0.18);
-      color: #fdba74;
-      font-weight: 900;
-      flex-shrink: 0;
-    }
     .stack { display: grid; gap: 14px; }
 
     .upload-box {
@@ -765,8 +744,12 @@
                   <button class="btn btn-primary" id="chooseFileBtn">Choose CSV File</button>
                   <button class="btn btn-secondary" id="downloadTemplateBtn">Download CSV Template</button>
                 </div>
+                <div style="margin-top:16px; display:grid; gap:12px; max-width:720px; margin-left:auto; margin-right:auto;">
+                  <input type="url" id="csvUrlInput" placeholder="Paste a public CricClubs CSV link" />
+                  <button class="btn btn-secondary" id="fetchCsvBtn" style="justify-content:center;">Fetch CricClubs CSV Link</button>
+                </div>
                 <div class="helper" id="uploadStatus">
-                  No file uploaded yet. Once imported, players will appear in the Players tab and predictions will unlock for all loaded teams.
+                  No file uploaded yet. You can either upload a CSV file directly or paste a public CricClubs CSV link. If the link is blocked by CricClubs or browser CORS rules, download the CSV manually and upload it here instead.
                 </div>
               </div>
             </div>
@@ -923,31 +906,12 @@
       playerSelect: document.getElementById("playerSelect"),
       predictPlayerBtn: document.getElementById("predictPlayerBtn"),
       playerPredictionResult: document.getElementById("playerPredictionResult"),
+      csvUrlInput: document.getElementById("csvUrlInput"),
+      fetchCsvBtn: document.getElementById("fetchCsvBtn"),
     };
 
-   let players = [];
-let selectedPlayerIndex = -1;
-
-async function bootstrapPlayers() {
-  try {
-    const response = await fetch(`./data/players.json?ts=${Date.now()}`, { cache: "no-store" });
-    if (!response.ok) throw new Error("No remote data");
-    const remotePlayers = await response.json();
-
-    if (Array.isArray(remotePlayers) && remotePlayers.length) {
-      players = remotePlayers;
-      selectedPlayerIndex = 0;
-      renderAll();
-      return;
-    }
-  } catch (error) {
-    console.warn("Remote players.json not available, falling back to localStorage.", error);
-  }
-
-  players = loadPlayers();
-  selectedPlayerIndex = players.length ? 0 : -1;
-  renderAll();
-}
+    let players = loadPlayers();
+    let selectedPlayerIndex = players.length ? 0 : -1;
 
     function loadPlayers() {
       try {
@@ -963,15 +927,48 @@ async function bootstrapPlayers() {
     }
 
     function toNumber(value) {
-      const n = Number(String(value || "").trim());
+      const n = Number(String(value || "").trim().replace(/,/g, ""));
       return Number.isFinite(n) ? n : 0;
     }
 
-    function parseCSV(text) {
-      const cleanedText = text.replace(/^\uFEFF/, "");
-      const lines = cleanedText.trim().split(/\r?\n/).filter(Boolean);
+    function normalizeHeader(header) {
+      return String(header || "")
+        .replace(/^\uFEFF/, "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "")
+        .replace(/[^a-z0-9_]/g, "");
+    }
+
+    function splitCSVLine(line) {
+      const result = [];
+      let current = "";
+      let insideQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (insideQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            insideQuotes = !insideQuotes;
+          }
+        } else if ((char === "," || char === "\t") && !insideQuotes) {
+          result.push(current);
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
+    }
+
+    function parseStandardCSV(lines) {
       if (!lines.length) return [];
       const headers = splitCSVLine(lines[0]).map(h => normalizeHeader(h));
+
       return lines.slice(1).map(line => {
         const values = splitCSVLine(line);
         const row = {};
@@ -999,37 +996,84 @@ async function bootstrapPlayers() {
       }).filter(player => player.name);
     }
 
-    function normalizeHeader(header) {
-      return String(header || "")
-        .replace(/^\uFEFF/, "")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "")
-        .replace(/[^a-z0-9_]/g, "");
+    function parseCricClubsScorecard(lines) {
+      const players = [];
+      let detectedTeam = "Imported Team";
+
+      const teamLine = lines.find(line =>
+        /vs|v\.|match/i.test(line) && !/batting|bowling/i.test(line)
+      );
+      if (teamLine) {
+        const cleaned = teamLine.replace(/\t/g, " ").trim();
+        if (cleaned) detectedTeam = cleaned;
+      }
+
+      const battingIndex = lines.findIndex(line => /batting/i.test(line));
+      if (battingIndex === -1) return [];
+
+      for (let i = battingIndex + 1; i < lines.length; i++) {
+        const rawLine = lines[i].trim();
+        if (!rawLine) continue;
+
+        if (/bowling|fall of wickets|extras|did not bat|yet to bat/i.test(rawLine)) {
+          break;
+        }
+
+        const parts = splitCSVLine(rawLine).map(p => p.trim()).filter(Boolean);
+        if (!parts.length) continue;
+
+        const joined = parts.join(" ").toLowerCase();
+        if (/batsman|batter|player name|r\s+b\s+4s\s+6s|dismissal/i.test(joined)) continue;
+
+        const name = parts[0] || "";
+        if (!name || name.length < 2) continue;
+
+        const numericParts = parts.map(p => toNumber(p));
+        const possibleRuns = numericParts.filter(n => n >= 0);
+        let runs = 0;
+
+        if (possibleRuns.length) {
+          runs = possibleRuns[0];
+          if (parts.length >= 5 && toNumber(parts[parts.length - 4]) >= 0) {
+            runs = toNumber(parts[parts.length - 4]);
+          } else if (parts.length >= 4 && toNumber(parts[parts.length - 3]) >= 0) {
+            runs = toNumber(parts[parts.length - 3]);
+          }
+        }
+
+        players.push({
+          name,
+          team: detectedTeam,
+          role: "Batter",
+          runs,
+          wickets: 0,
+          strikeRate: 0,
+          average: runs,
+          economy: 0,
+          catches: 0,
+          matchesPlayed: 1
+        });
+      }
+
+      return players;
     }
 
-    function splitCSVLine(line) {
-      const result = [];
-      let current = "";
-      let insideQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"') {
-          if (insideQuotes && line[i + 1] === '"') {
-            current += '"';
-            i++;
-          } else {
-            insideQuotes = !insideQuotes;
-          }
-        } else if (char === ',' && !insideQuotes) {
-          result.push(current);
-          current = "";
-        } else {
-          current += char;
-        }
+    function parseCSV(text) {
+      const cleanedText = String(text || "").replace(/^\uFEFF/, "");
+      const lines = cleanedText.split(/\r?\n/).filter(line => line.trim());
+      if (!lines.length) return [];
+
+      const lowerText = cleanedText.toLowerCase();
+      const looksLikeCricClubsScorecard =
+        lowerText.includes("batting") &&
+        (lowerText.includes("bowling") || lowerText.includes("extras") || lowerText.includes("fall of wickets"));
+
+      if (looksLikeCricClubsScorecard) {
+        const scorecardPlayers = parseCricClubsScorecard(lines);
+        if (scorecardPlayers.length) return scorecardPlayers;
       }
-      result.push(current);
-      return result;
+
+      return parseStandardCSV(lines);
     }
 
     function renderAll() {
@@ -1270,11 +1314,6 @@ async function bootstrapPlayers() {
       };
     }
 
-    function getRoleScore(player) {
-      const projection = getPlayerProjection(player);
-      return Math.max(projection.impact, 0);
-    }
-
     function predictMatch() {
       const teamA = elements.teamA.value;
       const teamB = elements.teamB.value;
@@ -1369,27 +1408,67 @@ async function bootstrapPlayers() {
       `;
     }
 
+    function processCSVText(csvText, sourceLabel = "CSV source") {
+      const parsed = parseCSV(String(csvText || ""));
+      if (!parsed.length) {
+        elements.uploadStatus.textContent = "Could not find valid player rows in that CSV. Double-check your headers or CricClubs export format.";
+        return false;
+      }
+      players = parsed;
+      selectedPlayerIndex = 0;
+      savePlayers();
+      renderAll();
+      elements.uploadStatus.textContent = `Loaded ${players.length} players successfully from ${sourceLabel}.`;
+      switchTab("playersTab");
+      return true;
+    }
+
     function handleCSVFile(file) {
       if (!file) return;
       const reader = new FileReader();
       reader.onload = () => {
         try {
-          const parsed = parseCSV(String(reader.result || ""));
-          if (!parsed.length) {
-            elements.uploadStatus.textContent = "Could not find valid player rows in that CSV. Double-check your headers.";
-            return;
-          }
-          players = parsed;
-          selectedPlayerIndex = 0;
-          savePlayers();
-          renderAll();
-          elements.uploadStatus.textContent = `Uploaded ${players.length} players successfully from ${file.name}.`;
-          switchTab("playersTab");
+          processCSVText(reader.result || "", file.name);
         } catch {
           elements.uploadStatus.textContent = "That CSV could not be processed. Please check the format and try again.";
         }
       };
       reader.readAsText(file);
+    }
+
+    async function fetchCSVFromUrl() {
+      const url = elements.csvUrlInput.value.trim();
+      if (!url) {
+        elements.uploadStatus.textContent = "Paste a public CricClubs CSV link first.";
+        return;
+      }
+
+      elements.fetchCsvBtn.disabled = true;
+      elements.fetchCsvBtn.textContent = "Fetching...";
+      elements.uploadStatus.textContent = "Trying to fetch the CricClubs CSV link...";
+
+      try {
+        const response = await fetch(url, {
+          method: "GET",
+          mode: "cors",
+          cache: "no-store"
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const text = await response.text();
+        const ok = processCSVText(text, url);
+        if (!ok) {
+          elements.uploadStatus.textContent = "The link loaded, but the CSV columns were not recognized.";
+        }
+      } catch (error) {
+        elements.uploadStatus.textContent = "This link could not be fetched directly. CricClubs may be blocking browser access or CORS. Download the CSV manually and upload it here instead.";
+      } finally {
+        elements.fetchCsvBtn.disabled = false;
+        elements.fetchCsvBtn.textContent = "Fetch CricClubs CSV Link";
+      }
     }
 
     function downloadTemplate() {
@@ -1438,7 +1517,7 @@ async function bootstrapPlayers() {
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
+        .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
     }
     function escapeAttr(value) { return escapeHtml(value); }
@@ -1460,6 +1539,7 @@ async function bootstrapPlayers() {
     elements.chooseFileBtn.addEventListener("click", () => elements.csvFileInput.click());
     elements.csvFileInput.addEventListener("change", event => handleCSVFile(event.target.files[0]));
     elements.downloadTemplateBtn.addEventListener("click", downloadTemplate);
+    elements.fetchCsvBtn.addEventListener("click", fetchCSVFromUrl);
     elements.loadSampleBtn.addEventListener("click", loadSampleData);
     elements.clearDataBtn.addEventListener("click", clearData);
     elements.openUploadsBtn.addEventListener("click", () => switchTab("uploads"));
@@ -1467,8 +1547,8 @@ async function bootstrapPlayers() {
     elements.predictPlayerBtn.addEventListener("click", predictPlayer);
     elements.matchFormat.addEventListener("change", () => {
       if (players.length) {
-        if (!elements.predictionResult.textContent.includes('No prediction yet')) predictMatch();
-        if (!elements.playerPredictionResult.textContent.includes('No prediction yet')) predictPlayer();
+        if (!elements.predictionResult.textContent.includes("No prediction yet")) predictMatch();
+        if (!elements.playerPredictionResult.textContent.includes("No prediction yet")) predictPlayer();
       }
     });
 
@@ -1504,7 +1584,7 @@ async function bootstrapPlayers() {
       window.location.href = `mailto:aniketdixit2010@gmail.com?subject=${subject}&body=${body}`;
     });
 
-bootstrapPlayers();
+    renderAll();
   </script>
 </body>
 </html>
