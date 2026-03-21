@@ -925,8 +925,29 @@
       playerPredictionResult: document.getElementById("playerPredictionResult"),
     };
 
-    let players = loadPlayers();
-    let selectedPlayerIndex = players.length ? 0 : -1;
+   let players = [];
+let selectedPlayerIndex = -1;
+
+async function bootstrapPlayers() {
+  try {
+    const response = await fetch(`./data/players.json?ts=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error("No remote data");
+    const remotePlayers = await response.json();
+
+    if (Array.isArray(remotePlayers) && remotePlayers.length) {
+      players = remotePlayers;
+      selectedPlayerIndex = 0;
+      renderAll();
+      return;
+    }
+  } catch (error) {
+    console.warn("Remote players.json not available, falling back to localStorage.", error);
+  }
+
+  players = loadPlayers();
+  selectedPlayerIndex = players.length ? 0 : -1;
+  renderAll();
+}
 
     function loadPlayers() {
       try {
@@ -1483,7 +1504,7 @@
       window.location.href = `mailto:aniketdixit2010@gmail.com?subject=${subject}&body=${body}`;
     });
 
-    renderAll();
+bootstrapPlayers();
   </script>
 </body>
 </html>
