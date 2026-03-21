@@ -953,315 +953,37 @@
     }
 
     function parseCSV(text) {
-   function safeText(value) {
-  return String(value ?? "").trim();
-}
-
-function toNumber(value) {
-  const cleaned = safeText(value).replace(/,/g, "");
-  if (!cleaned) return 0;
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function oversToDecimal(value) {
-  const text = safeText(value);
-  if (!text) return 0;
-  if (!text.includes(".")) return toNumber(text);
-  const [oversPart, ballsPart] = text.split(".");
-  return toNumber(oversPart) + Math.min(5, toNumber(ballsPart)) / 6;
-}
-
-function splitCSVLine(line) {
-  const result = [];
-  let current = "";
-  let insideQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (char === '"') {
-      if (insideQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        insideQuotes = !insideQuotes;
-      }
-    } else if ((char === "," || char === "\t") && !insideQuotes) {
-      result.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-
-  result.push(current);
-  return result;
-}
-
-function normalizeHeader(header) {
-  return String(header || "")
-    .replace(/^\uFEFF/, "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "")
-    .replace(/[^a-z0-9_]/g, "");
-}
-
-function rowText(row) {
-  return row.map(safeText).filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
-}
-
-function cleanSectionName(value) {
-  return safeText(value)
-    .replace(/^,+/, "")
-    .replace(/\s+Batting$/i, "")
-    .replace(/\s+Bowling$/i, "")
-    .trim();
-}
-
-function extractMatchTeams(rows) {
-  for (const row of rows) {
-    const text = rowText(row);
-    const match = text.match(/(.+?)\s+vs\s+(.+)/i);
-    if (match) {
-      return {
-        team1: match[1].trim(),
-        team2: match[2].trim()
-      };
-    }
-  }
-  return { team1: "", team2: "" };
-}
-
-function getOpponentForTeam(teamName, team1, team2) {
-  const t = safeText(teamName).toLowerCase();
-  const a = safeText(team1).toLowerCase();
-  const b = safeText(team2).toLowerCase();
-
-  if (!t) return "Opponent";
-  if (a && t.includes(a)) return team2 || "Opponent";
-  if (b && t.includes(b)) return team1 || "Opponent";
-  return team2 || team1 || "Opponent";
-}
-
-function isDismissalToken(value) {
-  const token = safeText(value).toLowerCase();
-  return [
-    "ct", "c", "lbw", "b", "run out", "st",
-    "retired", "retired out", "retired hurt",
-    "hit wicket", "not out", "absent"
-  ].includes(token);
-}
-
-function looksLikePlayerName(value) {
-  const text = safeText(value);
-  if (!text) return false;
-  if (isDismissalToken(text)) return false;
-  if (/^(total|extras|byes|leg bye|wickets|no balls|did not bat|fall of wickets|batsman|bowler|overs|maidens|runs|balls|fours|sixers|sixes)$/i.test(text)) return false;
-  if (/^[0-9.]+$/.test(text)) return false;
-  return /[a-z]/i.test(text);
-}
-
-function findHeaderIndex(cells, patterns) {
-  return cells.findIndex(cell =>
-    patterns.some(pattern => pattern.test(safeText(cell)))
-  );
-}
-
-function parseStandardCSV(lines) {
-  const headers = splitCSVLine(lines[0]).map(h => normalizeHeader(h));
-
-  return lines.slice(1).map(line => {
-    const values = splitCSVLine(line);
-    const row = {};
-
-    headers.forEach((header, index) => {
-      row[header] = safeText(values[index] || "");
-    });
-
-    const playerName =
-      row.name || row.playername || row.player ||
-      row.fullname || row.full_name || row.player_name;
-
-    const playerTeam = row.team || row.club || row.squad;
-    const playerOpponent = row.opponent || row.vs || row.against;
-    const playerRole = row.role || row.type || row.position;
-    const playerMatches = toNumber(row.matchesplayed || row.matches || row.matchplayed || row.innings || row.games);
-
-    return {
-      name: playerName || "Unnamed Player",
-      team: playerTeam || "Unassigned",
-      opponent: playerOpponent || "Opponent",
-      role: playerRole || "Player",
-      runs: toNumber(row.runs),
-      wickets: toNumber(row.wickets),
-      strikeRate: toNumber(row.strikerate || row.strike_rate),
-      average: toNumber(row.average || row.avg),
-      economy: toNumber(row.economy || row.econ),
-      catches: toNumber(row.catches || row.catch),
-      matchesPlayed: Math.max(1, playerMatches || 1)
-    };
-  }).filter(player => player.name && player.name !== "Unnamed Player");
-}
-
-function parseCricClubsScorecard(text) {
-  const rows = text.split(/\r?\n/).map(line => splitCSVLine(line));
-  const playersMap = new Map();
-  const { team1, team2 } = extractMatchTeams(rows);
-
-  function upsertPlayer(name, updates) {
-    const cleanName = safeText(name);
-    if (!looksLikePlayerName(cleanName)) return;
-
-    const key = cleanName.toLowerCase();
-    const existing = playersMap.get(key) || {
-      name: cleanName,
-      team: updates.team || "Unassigned",
-      opponent: updates.opponent || "Opponent",
-      role: "Player",
-      runs: 0,
-      wickets: 0,
-      strikeRate: 0,
-      average: 0,
-      economy: 0,
-      catches: 0,
-      matchesPlayed: 1
-    };
-
-    const merged = { ...existing, ...updates, name: cleanName };
-
-    if (merged.runs > 0 && merged.wickets > 0) merged.role = "All-Rounder";
-    else if (merged.wickets > 0) merged.role = "Bowler";
-    else if (merged.runs > 0) merged.role = "Batter";
-
-    playersMap.set(key, merged);
-  }
-
-  for (let r = 0; r < rows.length; r++) {
-    const row = rows[r].map(safeText);
-    const joined = rowText(row);
-
-    if (/Batting$/i.test(joined)) {
-      const teamName = cleanSectionName(joined);
-      const opponent = getOpponentForTeam(teamName, team1, team2);
-
-      let headerRowIndex = -1;
-      for (let x = r + 1; x < Math.min(rows.length, r + 6); x++) {
-        const probe = rows[x].map(safeText);
-        if (
-          probe.some(cell => /BatsMan|Batsman/i.test(cell)) &&
-          probe.some(cell => /^Runs$/i.test(cell))
-        ) {
-          headerRowIndex = x;
-          break;
-        }
-      }
-      if (headerRowIndex === -1) continue;
-
-      const headers = rows[headerRowIndex].map(safeText);
-      const nameIdx = findHeaderIndex(headers, [/BatsMan|Batsman/i]);
-      const runsIdx = findHeaderIndex(headers, [/^Runs$/i]);
-      const ballsIdx = findHeaderIndex(headers, [/^Balls$/i]);
-
-      for (let x = headerRowIndex + 1; x < rows.length; x++) {
-        const data = rows[x].map(safeText);
-        const textRow = rowText(data);
-
-        if (!textRow) continue;
-        if (/Bowling$/i.test(textRow) || /Fall of Wickets/i.test(textRow) || /^Byes:/i.test(textRow)) break;
-
-        const name = nameIdx >= 0 ? safeText(data[nameIdx]) : "";
-        if (!looksLikePlayerName(name)) continue;
-
-        const runs = runsIdx >= 0 ? toNumber(data[runsIdx]) : 0;
-        const balls = ballsIdx >= 0 ? toNumber(data[ballsIdx]) : 0;
-        const strikeRate = balls > 0 ? (runs / balls) * 100 : 0;
-
-        upsertPlayer(name, {
-          team: teamName,
-          opponent,
-          role: "Batter",
-          runs,
-          strikeRate: Number(strikeRate.toFixed(1)),
-          average: runs,
-          matchesPlayed: 1
+      const cleanedText = text.replace(/^\uFEFF/, "");
+      const lines = cleanedText.trim().split(/\r?\n/).filter(Boolean);
+      if (!lines.length) return [];
+      const headers = splitCSVLine(lines[0]).map(h => normalizeHeader(h));
+      return lines.slice(1).map(line => {
+        const values = splitCSVLine(line);
+        const row = {};
+        headers.forEach((header, index) => {
+          row[header] = (values[index] || "").trim();
         });
-      }
+
+        const playerName = row.name || row.playername || row.player || row.fullname || row.full_name || row.player_name;
+        const playerTeam = row.team || row.club || row.squad;
+        const playerRole = row.role || row.type || row.position;
+        const playerMatches = toNumber(row.matchesplayed || row.matches || row.matchplayed || row.innings || row.games);
+
+        return {
+          name: playerName || "Unnamed Player",
+          team: playerTeam || "Unassigned",
+          role: playerRole || "Player",
+          runs: toNumber(row.runs),
+          wickets: toNumber(row.wickets),
+          strikeRate: toNumber(row.strikerate || row.strike_rate),
+          average: toNumber(row.average || row.avg),
+          economy: toNumber(row.economy || row.econ),
+          catches: toNumber(row.catches || row.catch),
+          matchesPlayed: Math.max(1, playerMatches || 1),
+        };
+      }).filter(player => player.name);
     }
 
-    if (/Bowling$/i.test(joined)) {
-      const teamName = cleanSectionName(joined);
-      const opponent = getOpponentForTeam(teamName, team1, team2);
-
-      let headerRowIndex = -1;
-      for (let x = r + 1; x < Math.min(rows.length, r + 6); x++) {
-        const probe = rows[x].map(safeText);
-        if (
-          probe.some(cell => /^Bowler$/i.test(cell)) &&
-          probe.some(cell => /^Overs$/i.test(cell))
-        ) {
-          headerRowIndex = x;
-          break;
-        }
-      }
-      if (headerRowIndex === -1) continue;
-
-      const headers = rows[headerRowIndex].map(safeText);
-      const nameIdx = findHeaderIndex(headers, [/^Bowler$/i]);
-      const oversIdx = findHeaderIndex(headers, [/^Overs$/i]);
-      const runsIdx = findHeaderIndex(headers, [/^Runs$/i]);
-      const wicketsIdx = findHeaderIndex(headers, [/^Wickets$/i]);
-
-      for (let x = headerRowIndex + 1; x < rows.length; x++) {
-        const data = rows[x].map(safeText);
-        const textRow = rowText(data);
-
-        if (!textRow) continue;
-        if (/Fall of Wickets/i.test(textRow) || /Batting$/i.test(textRow)) break;
-
-        const name = nameIdx >= 0 ? safeText(data[nameIdx]) : "";
-        if (!looksLikePlayerName(name) || /^Total$/i.test(name)) continue;
-
-        const overs = oversIdx >= 0 ? oversToDecimal(data[oversIdx]) : 0;
-        const runsConceded = runsIdx >= 0 ? toNumber(data[runsIdx]) : 0;
-        const wickets = wicketsIdx >= 0 ? toNumber(data[wicketsIdx]) : 0;
-        const economy = overs > 0 ? runsConceded / overs : 0;
-        const bowlingAverage = wickets > 0 ? runsConceded / wickets : 0;
-
-        upsertPlayer(name, {
-          team: teamName,
-          opponent,
-          role: wickets > 0 ? "Bowler" : "Player",
-          wickets,
-          economy: Number(economy.toFixed(2)),
-          average: wickets > 0 ? Number(bowlingAverage.toFixed(2)) : (playersMap.get(safeText(name).toLowerCase())?.average || 0),
-          matchesPlayed: 1
-        });
-      }
-    }
-  }
-
-  return Array.from(playersMap.values()).filter(
-    player => player.name && player.team && player.team !== "Unassigned"
-  );
-}
-
-function parseCSV(text) {
-  const cleanedText = String(text || "").replace(/^\uFEFF/, "");
-  const lines = cleanedText.split(/\r?\n/).filter(line => line.trim());
-  if (!lines.length) return [];
-
-  const looksLikeScorecard =
-    /batting/i.test(cleanedText) &&
-    /bowling/i.test(cleanedText);
-
-  if (looksLikeScorecard) {
-    const scorecardPlayers = parseCricClubsScorecard(cleanedText);
-    if (scorecardPlayers.length) return scorecardPlayers;
-  }
-
-  return parseStandardCSV(lines);
-}
     function normalizeHeader(header) {
       return String(header || "")
         .replace(/^\uFEFF/, "")
