@@ -1854,7 +1854,48 @@ document.getElementById("addPlayerBtn").addEventListener("click", () => {
     const body = encodeURIComponent(`Name: ${name}\nOrganization: ${org}\nEmail: ${email}\nPhone: ${phone}\n\nMessage:\n${message}`);
     window.location.href = `mailto:aniketdixit2010@gmail.com?subject=${subject}&body=${body}`;
   });
+const CONTROL_PIN = "6872"; // change this to whatever PIN you want
+let controlsUnlocked = false;
 
+function setProtectedControlsLocked(isLocked) {
+  document.querySelectorAll(".protected-control").forEach(el => {
+    if (isLocked) {
+      el.disabled = true;
+      el.classList.add("protected-disabled");
+    } else {
+      el.disabled = false;
+      el.classList.remove("protected-disabled");
+    }
+  });
+}
+
+function unlockProtectedControls() {
+  controlsUnlocked = true;
+  sessionStorage.setItem("nyovalsiq_controls_unlocked", "yes");
+  setProtectedControlsLocked(false);
+  document.getElementById("controlPinError").style.display = "none";
+}
+
+function checkControlPin() {
+  const entered = document.getElementById("controlPinInput").value;
+  if (entered === CONTROL_PIN) {
+    unlockProtectedControls();
+  } else {
+    document.getElementById("controlPinError").style.display = "block";
+  }
+}
+
+document.getElementById("unlockControlsBtn").addEventListener("click", checkControlPin);
+
+document.getElementById("controlPinInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") checkControlPin();
+});
+
+if (sessionStorage.getItem("nyovalsiq_controls_unlocked") === "yes") {
+  unlockProtectedControls();
+} else {
+  setProtectedControlsLocked(true);
+}
   renderAll();
   </script>
 </body>
