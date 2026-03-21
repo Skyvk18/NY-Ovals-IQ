@@ -1401,7 +1401,7 @@ function parseCricClubsScorecard(text) {
 
       const player = players[selectedPlayerIndex];
       elements.playerName.textContent = player.name;
-      elements.playerMeta.textContent = `${player.team} • ${player.role}`;
+      elements.playerMeta.textContent = `${player.team} vs ${player.opponent || "Opponent"} • ${player.role}`;
       elements.playerTag.textContent = `${player.role || "Player"}`;
       elements.playerEmpty.classList.add("hidden");
       elements.playerDetails.classList.remove("hidden");
