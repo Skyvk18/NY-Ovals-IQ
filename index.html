@@ -927,8 +927,14 @@
     }
 
     function toNumber(value) {
-      const n = Number(String(value || "").trim().replace(/,/g, ""));
-      return Number.isFinite(n) ? n : 0;
+      const cleaned = String(value ?? "").trim().replace(/,/g, "");
+  if (!cleaned) return 0;
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function safeText(value) {
+  return String(value ?? "").trim();
     }
 
     function normalizeHeader(header) {
