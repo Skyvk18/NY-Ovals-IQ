@@ -947,29 +947,188 @@ function safeText(value) {
     }
 
     function splitCSVLine(line) {
-      const result = [];
-      let current = "";
-      let insideQuotes = false;
+  const result = [];
+  let current = "";
+  let insideQuotes = false;
 
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"') {
-          if (insideQuotes && line[i + 1] === '"') {
-            current += '"';
-            i++;
-          } else {
-            insideQuotes = !insideQuotes;
-          }
-        } else if ((char === "," || char === "\t") && !insideQuotes) {
-          result.push(current);
-          current = "";
-        } else {
-          current += char;
-        }
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === '"') {
+      if (insideQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        insideQuotes = !insideQuotes;
       }
+    } else if ((char === "," || char === "\t") && !insideQuotes) {
       result.push(current);
-      return result;
+      current = "";
+    } else {
+      current += char;
     }
+  function cleanTeamName(value) {
+  return safeText(value)
+    .replace(/^,+/, "")
+    .replace(/\s+Batting$/i, "")
+    .replace(/\s+Bowling$/i, "")
+    .trim();
+}
+
+function inferOpponentTeam(lines, currentTeam) {
+  for (const line of lines) {
+    if (/\bvs\b/i.test(line)) {
+      const cleaned = safeText(line).replace(/\s+/g, " ");
+      const parts = cleaned.split(/\bvs\b/i).map(s => s.trim()).filter(Boolean);
+
+      if (parts.length === 2) {
+        if (parts[0].toLowerCase().includes(currentTeam.toLowerCase())) return parts[1];
+        if (parts[1].toLowerCase().includes(currentTeam.toLowerCase())) return parts[0];
+      }
+    }
+  }
+  return "Opponent";
+}
+
+function parseCricClubsScorecard(text) {
+  const lines = text.split(/\r?\n/).map(line => line.trimEnd());
+  const playersMap = new Map();
+
+  function upsertPlayer(name, updates) {
+    const key = safeText(name).toLowerCase();
+    if (!key) return;
+
+    const existing = playersMap.get(key) || {
+      name: safeText(name),
+      team: updates.team || "Unassigned",
+      opponent: updates.opponent || "Opponent",
+      role: "Player",
+      runs: 0,
+      wickets: 0,
+      strikeRate: 0,
+      average: 0,
+      economy: 0,
+      catches: 0,
+      matchesPlayed: 1,
+    };
+
+    const merged = { ...existing, ...updates };
+
+    if (merged.runs > 0 && merged.wickets > 0) merged.role = "All-Rounder";
+    else if (merged.wickets > 0) merged.role = "Bowler";
+    else if (merged.runs > 0) merged.role = "Batter";
+
+    playersMap.set(key, merged);
+  }
+
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i].trim();
+
+    if (!line) {
+      i++;
+      continue;
+    }
+
+    if (/Batting$/i.test(line)) {
+      const battingTeam = cleanTeamName(line);
+      const opponent = inferOpponentTeam(lines, battingTeam);
+
+      i++;
+      while (i < lines.length && !/BatsMan|Batsman/i.test(lines[i])) i++;
+      i++;
+
+      while (i < lines.length) {
+        const row = lines[i].trim();
+        if (!row) {
+          i++;
+          continue;
+        }
+
+        if (/Bowling$/i.test(row) || /Fall of Wickets/i.test(row) || /Byes:/i.test(row)) break;
+
+        const parts = splitCSVLine(row).map(safeText);
+
+        if (parts.length >= 8) {
+          const name = parts[0];
+          const runs = toNumber(parts[4]);
+          const balls = toNumber(parts[5]);
+          const strikeRate = balls > 0 ? (runs / balls) * 100 : 0;
+
+          upsertPlayer(name, {
+            team: battingTeam,
+            opponent,
+            role: "Batter",
+            runs,
+            strikeRate: Number(strikeRate.toFixed(1)),
+            average: runs,
+            matchesPlayed: 1,
+          });
+        }
+
+        i++;
+      }
+
+      continue;
+    }
+
+    if (/Bowling$/i.test(line)) {
+      const bowlingTeam = cleanTeamName(line);
+      const opponent = inferOpponentTeam(lines, bowlingTeam);
+
+      i++;
+      while (i < lines.length && !/^\s*Bowler/i.test(lines[i])) i++;
+      i++;
+
+      while (i < lines.length) {
+        const row = lines[i].trim();
+
+        if (!row) {
+          i++;
+          continue;
+        }
+
+        if (/^Total/i.test(row) || /Fall of Wickets/i.test(row) || /Batting$/i.test(row)) break;
+
+        const parts = splitCSVLine(row).map(safeText);
+
+        if (parts.length >= 5) {
+          const name = parts[0];
+          const overs = toNumber(parts[1]);
+          const runsConceded = toNumber(parts[3]);
+          const wickets = toNumber(parts[4]);
+          const economy = overs > 0 ? runsConceded / overs : 0;
+          const bowlingAverage = wickets > 0 ? runsConceded / wickets : 0;
+
+          upsertPlayer(name, {
+            team: bowlingTeam,
+            opponent,
+            role: wickets > 0 ? "Bowler" : "Player",
+            wickets,
+            economy: Number(economy.toFixed(2)),
+            average: wickets > 0
+              ? Number(bowlingAverage.toFixed(2))
+              : (playersMap.get(safeText(name).toLowerCase())?.average || 0),
+            matchesPlayed: 1,
+          });
+        }
+
+        i++;
+      }
+
+      continue;
+    }
+
+    i++;
+  }
+
+  return Array.from(playersMap.values()).filter(player => player.name);
+}
+
+  result.push(current);
+  return result;
+}
 
     function parseStandardCSV(lines) {
       if (!lines.length) return [];
