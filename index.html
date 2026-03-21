@@ -1223,20 +1223,51 @@ function parseCricClubsScorecard(text) {
       return players;
     }
 
-    function parseCSV(text) {
-      const cleanedText = String(text || "").replace(/^\uFEFF/, "");
-      const lines = cleanedText.split(/\r?\n/).filter(line => line.trim());
-      if (!lines.length) return [];
+  function parseCSV(text) {
+  const cleanedText = text.replace(/^\uFEFF/, "");
+  const lines = cleanedText.trim().split(/\r?\n/).filter(Boolean);
+  if (!lines.length) return [];
 
-      const lowerText = cleanedText.toLowerCase();
-      const looksLikeCricClubsScorecard =
-        lowerText.includes("batting") &&
-        (lowerText.includes("bowling") || lowerText.includes("extras") || lowerText.includes("fall of wickets"));
+  const looksLikeScorecard =
+    /Batting/i.test(cleanedText) &&
+    /Bowling/i.test(cleanedText);
 
-      if (looksLikeCricClubsScorecard) {
-        const scorecardPlayers = parseCricClubsScorecard(lines);
-        if (scorecardPlayers.length) return scorecardPlayers;
-      }
+  if (looksLikeScorecard) {
+    const scorecardPlayers = parseCricClubsScorecard(cleanedText);
+    if (scorecardPlayers.length) return scorecardPlayers;
+  }
+
+  const headers = splitCSVLine(lines[0]).map(h => normalizeHeader(h));
+
+  return lines.slice(1).map(line => {
+    const values = splitCSVLine(line);
+    const row = {};
+
+    headers.forEach((header, index) => {
+      row[header] = safeText(values[index] || "");
+    });
+
+    const playerName = row.name || row.playername || row.player || row.fullname || row.full_name || row.player_name;
+    const playerTeam = row.team || row.club || row.squad;
+    const playerOpponent = row.opponent || row.vs || row.against;
+    const playerRole = row.role || row.type || row.position;
+    const playerMatches = toNumber(row.matchesplayed || row.matches || row.matchplayed || row.innings || row.games);
+
+    return {
+      name: playerName || "Unnamed Player",
+      team: playerTeam || "Unassigned",
+      opponent: playerOpponent || "Opponent",
+      role: playerRole || "Player",
+      runs: toNumber(row.runs),
+      wickets: toNumber(row.wickets),
+      strikeRate: toNumber(row.strikerate || row.strike_rate),
+      average: toNumber(row.average || row.avg),
+      economy: toNumber(row.economy || row.econ),
+      catches: toNumber(row.catches || row.catch),
+      matchesPlayed: Math.max(1, playerMatches || 1),
+    };
+  }).filter(player => player.name);
+}
 
       return parseStandardCSV(lines);
     }
