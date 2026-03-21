@@ -782,19 +782,21 @@
     <p class="panel-subtitle">Enter a player directly without uploading a CSV</p>
 
     <div style="display:grid; gap:10px; margin-top:14px;">
-      <input id="manualName" placeholder="Player Name" />
-      <input id="manualTeam" placeholder="Team Name" />
-      <input id="manualOpponent" placeholder="Opponent (optional)" />
-      <input id="manualRole" placeholder="Role (Batter/Bowler/All-Rounder)" />
+    <input class="protected-control" id="manualName" placeholder="Player Name" />
+<input class="protected-control" id="manualTeam" placeholder="Team Name" />
+<input class="protected-control" id="manualOpponent" placeholder="Opponent (optional)" />
+<input class="protected-control" id="manualRole" placeholder="Role (Batter/Bowler/All-Rounder)" />
 
-      <input id="manualRuns" type="number" placeholder="Runs" />
-      <input id="manualWickets" type="number" placeholder="Wickets" />
-      <input id="manualSR" type="number" placeholder="Strike Rate" />
-      <input id="manualAvg" type="number" placeholder="Average" />
-      <input id="manualEco" type="number" placeholder="Economy" />
-      <input id="manualMatches" type="number" placeholder="Matches Played" />
+<input class="protected-control" id="manualRuns" type="number" placeholder="Runs" />
+<input class="protected-control" id="manualWickets" type="number" placeholder="Wickets" />
+<input class="protected-control" id="manualSR" type="number" placeholder="Strike Rate" />
+<input class="protected-control" id="manualAvg" type="number" placeholder="Average" />
+<input class="protected-control" id="manualEco" type="number" placeholder="Economy" />
+<input class="protected-control" id="manualMatches" type="number" placeholder="Matches Played" />
 
-      <button class="btn btn-primary" id="addPlayerBtn">Add Player</button>
+<button class="btn btn-primary protected-control" id="addPlayerBtn">
+  Add Player
+</button>
     </div>
   </div>
 </div>
