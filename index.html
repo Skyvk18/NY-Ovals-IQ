@@ -542,16 +542,16 @@
       <div class="container hero-grid">
         <div>
           <div class="eyebrow">Next-gen cricket intelligence</div>
-          <h2>IPL-style analytics. Capital District heart.</h2>
+          <h2>Smart cricket analytics built for the Capital District.</h2>
           <p>
-            NY Ovals IQ now looks and feels more like a real sports analytics dashboard. Upload player data, compare teams, predict match outcomes, and estimate a player’s next performance with a much cleaner broadcast-style interface.
+            NY Ovals IQ is a modern cricket analytics platform. Upload player data, compare teams, predict match outcomes, and estimate a player’s next performance with a clean, professional interface.
           </p>
           <div class="hero-actions">
             <a class="btn btn-primary" href="#dashboard">Launch Platform →</a>
             <a class="btn btn-secondary" href="#uploads">Upload First CSV</a>
           </div>
           <div class="hero-pills">
-            <div class="pill">ESPN-inspired layout</div>
+            <div class="pill">NY Ovals IQ dashboard layout</div>
             <div class="pill">Smart team predictions</div>
             <div class="pill">Player next-match forecasts</div>
           </div>
@@ -710,14 +710,20 @@
           <div class="prediction-grid">
             <div class="card panel-pad">
               <div class="panel-title">Team vs Team Predictor</div>
-              <p class="panel-subtitle">Weighted by runs, strike rate, wickets, economy, and role balance.</p>
+              <p class="panel-subtitle">Uses per-player averages and scales projected scores to the selected match format.</p>
               <div style="display:grid; gap:12px; margin-top:16px;">
+                <select id="matchFormat">
+                  <option value="t10">T10</option>
+                  <option value="t12">T12</option>
+                  <option value="t20" selected>T20</option>
+                  <option value="t50">50 Overs</option>
+                </select>
                 <select id="teamA"></select>
                 <select id="teamB"></select>
                 <button class="btn btn-primary" id="predictBtn">Run Match Prediction</button>
               </div>
               <div class="helper">
-                This version uses roster strength as a proxy. Batters are rewarded for runs and strike rate. Bowlers get heavier wicket weighting with an economy adjustment. All-rounders get balanced credit because they refuse to stay in one lane.
+                This version assumes the uploaded data is season or tournament total data, not one-match data. Predictions convert those totals into per-match estimates using matches played when available, then scale them to T10, T12, T20, or 50-over cricket.
               </div>
             </div>
 
@@ -730,7 +736,7 @@
 
               <div style="margin-top:18px; border-top:1px solid rgba(255,255,255,0.08); padding-top:18px;">
                 <div class="panel-title">Player Next Match Forecast</div>
-                <p class="panel-subtitle">Uses current player output, role weighting, and efficiency stats.</p>
+                <p class="panel-subtitle">Projects one player's next-match contribution for the selected format.</p>
                 <div style="display:grid; gap:12px; margin-top:14px;">
                   <select id="playerSelect"></select>
                   <button class="btn btn-secondary" id="predictPlayerBtn">Predict Player Performance</button>
@@ -748,7 +754,7 @@
           <div class="dashboard-grid">
             <div class="card panel-pad" id="uploadsCard">
               <div class="panel-title">Upload player data</div>
-              <p class="panel-subtitle">Accepted columns: name, team, role, runs, wickets, strikeRate, average, economy, catches</p>
+              <p class="panel-subtitle">Accepted columns: name, team, role, runs, wickets, strikeRate, average, economy, catches, matchesPlayed, matchesPlayed</p>
 
               <div class="upload-box" style="margin-top:18px;" id="dropZone">
                 <div class="upload-icon">⬆️</div>
@@ -770,10 +776,10 @@
               <p class="panel-subtitle">Keep the CSV simple for version 1.</p>
               <div class="helper">
                 <strong>Recommended columns:</strong><br>
-                name, team, role, runs, wickets, strikeRate, average, economy, catches
+                name, team, role, runs, wickets, strikeRate, average, economy, catches, matchesPlayed
                 <br><br>
                 <strong>Example:</strong><br>
-                John Smith, Albany Strikers, All-Rounder, 120, 8, 132.4, 30, 6.2, 3
+                John Smith, Albany Strikers, All-Rounder, 120, 8, 132.4, 30, 6.2, 3, 6
               </div>
             </div>
           </div>
@@ -902,6 +908,7 @@
       detailCatches: document.getElementById("detailCatches"),
       detailTeam: document.getElementById("detailTeam"),
       detailRole: document.getElementById("detailRole"),
+      matchFormat: document.getElementById("matchFormat"),
       csvFileInput: document.getElementById("csvFileInput"),
       chooseFileBtn: document.getElementById("chooseFileBtn"),
       downloadTemplateBtn: document.getElementById("downloadTemplateBtn"),
@@ -954,6 +961,7 @@
         const playerName = row.name || row.playername || row.player || row.fullname || row.full_name || row.player_name;
         const playerTeam = row.team || row.club || row.squad;
         const playerRole = row.role || row.type || row.position;
+        const playerMatches = toNumber(row.matchesplayed || row.matches || row.matchplayed || row.innings || row.games);
 
         return {
           name: playerName || "Unnamed Player",
@@ -965,6 +973,7 @@
           average: toNumber(row.average || row.avg),
           economy: toNumber(row.economy || row.econ),
           catches: toNumber(row.catches || row.catch),
+          matchesPlayed: Math.max(1, playerMatches || 1),
         };
       }).filter(player => player.name);
     }
@@ -1142,7 +1151,7 @@
       elements.detailEconomy.textContent = player.economy;
       elements.detailCatches.textContent = player.catches;
       elements.detailTeam.textContent = player.team;
-      elements.detailRole.textContent = player.role;
+      elements.detailRole.textContent = `${player.role} • ${player.matchesPlayed || 1} matches`;
     }
 
     function populateTeams() {
@@ -1186,22 +1195,69 @@
       });
     }
 
-    function getRoleScore(player) {
+    function getPerMatchRuns(player) {
+      const matches = Math.max(1, toNumber(player.matchesPlayed) || 1);
+      const totalRuns = toNumber(player.runs);
+      const avg = toNumber(player.average);
+      if (avg > 0) return avg;
+      return totalRuns / matches;
+    }
+
+    function getPerMatchWickets(player) {
+      const matches = Math.max(1, toNumber(player.matchesPlayed) || 1);
+      return toNumber(player.wickets) / matches;
+    }
+
+    function getFormatConfig() {
+      const format = elements.matchFormat?.value || "t20";
+      const configs = {
+        t10: { overs: 10, battingFactor: 0.62, wicketFactor: 0.65, srBase: 145 },
+        t12: { overs: 12, battingFactor: 0.7, wicketFactor: 0.72, srBase: 140 },
+        t20: { overs: 20, battingFactor: 1, wicketFactor: 1, srBase: 130 },
+        t50: { overs: 50, battingFactor: 2.05, wicketFactor: 1.85, srBase: 95 }
+      };
+      return configs[format] || configs.t20;
+    }
+
+    function getPlayerProjection(player) {
       const role = String(player.role || "").toLowerCase();
-      let score = player.runs * 0.55 + player.strikeRate * 0.22 + player.average * 0.23;
-      if (role.includes("bowler")) {
-        score += player.wickets * 26 - player.economy * 3.4 + player.catches * 1.2;
-      } else if (role.includes("all")) {
-        score += player.wickets * 18 - player.economy * 2.2 + player.catches * 1.4;
-      } else {
-        score += player.wickets * 8 - player.economy * 1.1 + player.catches * 1.6;
-      }
-      return Math.max(score, 0);
+      const format = getFormatConfig();
+      const baseRuns = getPerMatchRuns(player);
+      const baseWickets = getPerMatchWickets(player);
+      const strikeRate = toNumber(player.strikeRate);
+      const economy = toNumber(player.economy);
+      const catches = toNumber(player.catches) / Math.max(1, toNumber(player.matchesPlayed) || 1);
+
+      let projectedRuns = baseRuns * format.battingFactor;
+      if (strikeRate > 0) projectedRuns *= (0.82 + (strikeRate / format.srBase) * 0.18);
+      if (role.includes("bowler") && !role.includes("all")) projectedRuns *= 0.58;
+      if (role.includes("all")) projectedRuns *= 0.9;
+      projectedRuns += catches * 0.4;
+
+      let projectedWickets = baseWickets * format.wicketFactor;
+      if (economy > 0) projectedWickets *= Math.max(0.6, 1 + (7 - economy) * 0.06);
+      if (role.includes("batter") && !role.includes("all")) projectedWickets *= 0.28;
+      if (role.includes("bowler")) projectedWickets *= 1.18;
+
+      projectedRuns = Math.max(0, Math.min(projectedRuns, format.overs === 50 ? 130 : format.overs === 20 ? 90 : 60));
+      projectedWickets = Math.max(0, Math.min(projectedWickets, format.overs === 50 ? 5 : 4));
+
+      return {
+        projectedRuns,
+        projectedWickets,
+        impact: projectedRuns + projectedWickets * 22 + catches * 3
+      };
+    }
+
+    function getRoleScore(player) {
+      const projection = getPlayerProjection(player);
+      return Math.max(projection.impact, 0);
     }
 
     function predictMatch() {
       const teamA = elements.teamA.value;
       const teamB = elements.teamB.value;
+      const formatLabel = elements.matchFormat.options[elements.matchFormat.selectedIndex].text;
       if (!players.length) {
         elements.predictionResult.innerHTML = '<strong>No data loaded</strong><p>Upload team data first.</p>';
         return;
@@ -1217,18 +1273,33 @@
 
       const teamAPlayers = players.filter(p => p.team === teamA);
       const teamBPlayers = players.filter(p => p.team === teamB);
-      const scoreA = teamAPlayers.reduce((sum, p) => sum + getRoleScore(p), 0);
-      const scoreB = teamBPlayers.reduce((sum, p) => sum + getRoleScore(p), 0);
-      const total = Math.max(scoreA + scoreB, 1);
-      const probA = (scoreA / total) * 100;
-      const probB = (scoreB / total) * 100;
+
+      function teamProjection(teamPlayers) {
+        const projections = teamPlayers.map(player => ({ player, proj: getPlayerProjection(player) }));
+        const topSeven = projections.slice().sort((a, b) => b.proj.projectedRuns - a.proj.projectedRuns).slice(0, 7);
+        const topFiveBowlers = projections.slice().sort((a, b) => b.proj.projectedWickets - a.proj.projectedWickets).slice(0, 5);
+        const runs = topSeven.reduce((sum, item) => sum + item.proj.projectedRuns, 0);
+        const wickets = topFiveBowlers.reduce((sum, item) => sum + item.proj.projectedWickets, 0);
+        const strength = projections.reduce((sum, item) => sum + item.proj.impact, 0);
+        return {
+          projectedRuns: Math.round(runs),
+          projectedWickets: Math.max(1, Math.min(10, Math.round(wickets))),
+          strength
+        };
+      }
+
+      const teamAProj = teamProjection(teamAPlayers);
+      const teamBProj = teamProjection(teamBPlayers);
+      const totalStrength = Math.max(teamAProj.strength + teamBProj.strength, 1);
+      const probA = (teamAProj.strength / totalStrength) * 100;
+      const probB = (teamBProj.strength / totalStrength) * 100;
       const winner = probA >= probB ? teamA : teamB;
       const stronger = probA >= probB ? probA : probB;
       const fillWidth = Math.max(8, Math.min(probA, 92));
 
       elements.predictionResult.innerHTML = `
         <strong>${escapeHtml(winner)} likely to win 🏆</strong>
-        <p>Win model based on roster batting output, bowling threat, and efficiency balance.</p>
+        <p>${formatLabel} projection based on per-match player output rather than raw season totals.</p>
         <div class="duel">
           <div class="duel-card">
             <div class="label">${escapeHtml(teamA)}</div>
@@ -1242,8 +1313,8 @@
         </div>
         <div class="probability-bar"><div class="probability-fill" style="width:${fillWidth}%"></div></div>
         <div class="score-strip">
-          <div class="score-box"><div class="k">Team A Score</div><div class="v">${scoreA.toFixed(0)}</div></div>
-          <div class="score-box"><div class="k">Team B Score</div><div class="v">${scoreB.toFixed(0)}</div></div>
+          <div class="score-box"><div class="k">${escapeHtml(teamA)} Score</div><div class="v">${teamAProj.projectedRuns}/${teamAProj.projectedWickets}</div></div>
+          <div class="score-box"><div class="k">${escapeHtml(teamB)} Score</div><div class="v">${teamBProj.projectedRuns}/${teamBProj.projectedWickets}</div></div>
           <div class="score-box"><div class="k">Confidence</div><div class="v">${stronger.toFixed(1)}%</div></div>
         </div>
       `;
@@ -1251,31 +1322,28 @@
 
     function predictPlayer() {
       const selectedName = elements.playerSelect.value;
+      const formatLabel = elements.matchFormat.options[elements.matchFormat.selectedIndex].text;
       const player = players.find(p => p.name === selectedName || `${p.name} — ${p.team}` === selectedName);
       if (!player) {
         elements.playerPredictionResult.innerHTML = '<strong>No player selected</strong><p>Choose a player first.</p>';
         return;
       }
 
-      const role = String(player.role || "").toLowerCase();
-      const expectedRuns = role.includes("bowler")
-        ? player.runs * 0.25 + player.average * 0.35 + player.strikeRate * 0.08
-        : player.runs * 0.45 + player.average * 0.45 + player.strikeRate * 0.10;
-
-      const expectedWickets = role.includes("batter")
-        ? Math.max(0, player.wickets * 0.35 - player.economy * 0.04)
-        : Math.max(0, player.wickets * 0.65 + (player.economy ? (8 - player.economy) * 0.35 : 0));
-
-      const impact = getRoleScore(player);
-      const impactBand = impact >= 220 ? "Elite" : impact >= 140 ? "High" : impact >= 80 ? "Steady" : "Developing";
+      const projection = getPlayerProjection(player);
+      const impactBand = projection.impact >= 95 ? 'Elite' : projection.impact >= 65 ? 'High' : projection.impact >= 35 ? 'Steady' : 'Developing';
+      const baseRuns = getPerMatchRuns(player);
+      const baseWickets = getPerMatchWickets(player);
 
       elements.playerPredictionResult.innerHTML = `
         <strong>${escapeHtml(player.name)} next match forecast</strong>
-        <p>${escapeHtml(player.team)} • ${escapeHtml(player.role)} projected from current historical stats.</p>
+        <p>${escapeHtml(player.team)} • ${escapeHtml(player.role)} • ${formatLabel} projection from per-match output.</p>
         <div class="score-strip">
-          <div class="score-box"><div class="k">Pred. Runs</div><div class="v">${expectedRuns.toFixed(0)}</div></div>
-          <div class="score-box"><div class="k">Pred. Wickets</div><div class="v">${expectedWickets.toFixed(1)}</div></div>
+          <div class="score-box"><div class="k">Pred. Runs</div><div class="v">${projection.projectedRuns.toFixed(0)}</div></div>
+          <div class="score-box"><div class="k">Pred. Wickets</div><div class="v">${projection.projectedWickets.toFixed(1)}</div></div>
           <div class="score-box"><div class="k">Impact Tier</div><div class="v">${impactBand}</div></div>
+        </div>
+        <div class="helper" style="margin-top:12px;">
+          Base per-match profile: ${baseRuns.toFixed(1)} runs and ${baseWickets.toFixed(1)} wickets. This prediction scales that baseline to the selected format instead of using raw tournament totals.
         </div>
       `;
     }
@@ -1305,10 +1373,10 @@
 
     function downloadTemplate() {
       const template = [
-        "name,team,role,runs,wickets,strikeRate,average,economy,catches",
-        "John Smith,Albany Strikers,All-Rounder,120,8,132.4,30,6.2,3",
-        "Rahul Patel,Capital Chargers,Batter,178,1,140.1,35.6,0,4",
-        "Ayan Das,Troy Titans,Bowler,38,12,101.3,14.8,5.4,2"
+        "name,team,role,runs,wickets,strikeRate,average,economy,catches,matchesPlayed",
+        "John Smith,Albany Strikers,All-Rounder,120,8,132.4,30,6.2,3,6",
+        "Rahul Patel,Capital Chargers,Batter,178,1,140.1,35.6,0,4,7",
+        "Ayan Das,Troy Titans,Bowler,38,12,101.3,14.8,5.4,2,8"
       ].join("\n");
       const blob = new Blob([template], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
@@ -1323,10 +1391,10 @@
 
     function loadSampleData() {
       players = [
-        { name: "Arjun Patel", team: "Albany Strikers", role: "All-Rounder", runs: 120, wickets: 6, strikeRate: 132.4, average: 30, economy: 6.2, catches: 3 },
-        { name: "Rohan Singh", team: "Capital Chargers", role: "Batter", runs: 178, wickets: 0, strikeRate: 141.8, average: 44.5, economy: 0, catches: 4 },
-        { name: "Sameer Khan", team: "Albany Strikers", role: "Bowler", runs: 36, wickets: 11, strikeRate: 108.1, average: 12, economy: 5.7, catches: 2 },
-        { name: "Dev Malhotra", team: "Capital Chargers", role: "Bowler", runs: 29, wickets: 10, strikeRate: 96.4, average: 9.8, economy: 5.2, catches: 1 },
+        { name: "Arjun Patel", team: "Albany Strikers", role: "All-Rounder", runs: 120, wickets: 6, strikeRate: 132.4, average: 30, economy: 6.2, catches: 3, matchesPlayed: 6 },
+        { name: "Rohan Singh", team: "Capital Chargers", role: "Batter", runs: 178, wickets: 0, strikeRate: 141.8, average: 44.5, economy: 0, catches: 4, matchesPlayed: 7 },
+        { name: "Sameer Khan", team: "Albany Strikers", role: "Bowler", runs: 36, wickets: 11, strikeRate: 108.1, average: 12, economy: 5.7, catches: 2, matchesPlayed: 8 },
+        { name: "Dev Malhotra", team: "Capital Chargers", role: "Bowler", runs: 29, wickets: 10, strikeRate: 96.4, average: 9.8, economy: 5.2, catches: 1, matchesPlayed: 8 },
       ];
       selectedPlayerIndex = 0;
       savePlayers();
@@ -1376,6 +1444,12 @@
     elements.openUploadsBtn.addEventListener("click", () => switchTab("uploads"));
     elements.predictBtn.addEventListener("click", predictMatch);
     elements.predictPlayerBtn.addEventListener("click", predictPlayer);
+    elements.matchFormat.addEventListener("change", () => {
+      if (players.length) {
+        if (!elements.predictionResult.textContent.includes('No prediction yet')) predictMatch();
+        if (!elements.playerPredictionResult.textContent.includes('No prediction yet')) predictPlayer();
+      }
+    });
 
     const dropZone = document.getElementById("dropZone");
     ["dragenter", "dragover"].forEach(eventName => {
